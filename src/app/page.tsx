@@ -10,6 +10,7 @@ import CartDrawer from '@/components/CartDrawer';
 import CategoryFilter from '@/components/CategoryFilter';
 import Hero from '@/components/Hero';
 import { ArrowUpDown, ChevronUp, Flame, Sparkles } from 'lucide-react';
+import Reviews from '@/components/Reviews';
 
 const CATEGORY_META: Record<string, { emoji: string; color: string }> = {
   'Food Products':            { emoji: '🥬', color: 'from-green-400 to-emerald-500' },
@@ -256,6 +257,9 @@ export default function Home() {
             </div>
           )}
         </div>
+
+        {/* Reviews */}
+        <Reviews />
       </main>
 
       {/* Footer */}
