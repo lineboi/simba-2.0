@@ -6,6 +6,7 @@ import { t } from '@/lib/translations';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface CartDrawerProps {
   open: boolean;
@@ -15,6 +16,7 @@ interface CartDrawerProps {
 export default function CartDrawer({ open, onClose }: CartDrawerProps) {
   const { cart, darkMode, language, removeFromCart, updateQuantity, cartTotal, clearCart } = useStore();
   const total = cartTotal();
+  const router = useRouter();
 
   const formatted = (n: number) => new Intl.NumberFormat('en-RW').format(n);
 
@@ -36,7 +38,7 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
       {/* Modal Container */}
       <div
         className={`relative w-full max-w-xl max-h-[85vh] overflow-hidden rounded-2xl shadow-xl border animate-slide-up flex flex-col transition-all duration-300 ${
-          darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'
+          darkMode ? 'bg-gray-950 border-gray-800' : 'bg-white border-gray-100'
         }`}
       >
         {/* Refined Header */}
@@ -55,6 +57,8 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
                 onClick={() => {
                   if (confirm('Are you sure you want to clear your entire cart?')) {
                     clearCart();
+                    onClose();
+                    router.push('/');
                   }
                 }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
