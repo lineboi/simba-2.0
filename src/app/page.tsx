@@ -10,6 +10,7 @@ import CartDrawer from '@/components/CartDrawer';
 import CategoryFilter from '@/components/CategoryFilter';
 import Hero from '@/components/Hero';
 import Reviews from '@/components/Reviews';
+import Footer from '@/components/Footer';
 import { ArrowUpDown, ChevronUp, Flame, Sparkles, ChevronDown } from 'lucide-react';
 
 const PAGE_SIZE = 30;
@@ -60,7 +61,11 @@ export default function Home() {
   }, []);
 
   // Reset pagination when filter changes
-  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [category, search, sort]);
+  const [prevFilter, setPrevFilter] = useState({ category, search, sort });
+  if (prevFilter.category !== category || prevFilter.search !== search || prevFilter.sort !== sort) {
+    setPrevFilter({ category, search, sort });
+    setVisibleCount(PAGE_SIZE);
+  }
 
   const categories = useMemo(() => {
     if (!data) return [];
@@ -164,7 +169,7 @@ export default function Home() {
         )}
 
         {/* PRODUCTS + REVIEWS SIDE BY SIDE */}
-        <div ref={productsRef} className="flex flex-col lg:flex-row gap-6 items-start">
+        <div ref={productsRef} className="flex flex-col lg:flex-row gap-12 items-start">
 
           {/* LEFT — Products */}
           <div className="flex-1 min-w-0">
@@ -255,21 +260,7 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className={`mt-20 border-t py-10 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold">S</span>
-            </div>
-            <div>
-              <div className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Simba Supermarket</div>
-              <div className="text-xs text-orange-500">Rwanda&apos;s Online Supermarket</div>
-            </div>
-          </div>
-          <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>© 2025 Simba Supermarket · Kigali, Rwanda</p>
-        </div>
-      </footer>
+      <Footer />
 
       {/* Scroll to top */}
       <button

@@ -1,10 +1,10 @@
 'use client';
 
 import { useStore } from '@/lib/store';
-import { Star, Quote } from 'lucide-react';
+import { Star, Quote, PenLine, X, Check } from 'lucide-react';
 import { useState } from 'react';
 
-const REVIEWS = [
+const INITIAL_REVIEWS = [
   {
     name: 'Gwiza Moise',
     avatar: 'GM',
@@ -67,44 +67,116 @@ const REVIEWS = [
   },
 ];
 
-function Stars({ rating }: { rating: number }) {
+const AVATAR_COLORS = [
+  'from-orange-500 to-amber-500',
+  'from-pink-500 to-rose-500',
+  'from-blue-500 to-cyan-500',
+  'from-purple-500 to-indigo-500',
+  'from-green-500 to-teal-500',
+  'from-red-500 to-orange-400',
+];
+
+type Review = typeof INITIAL_REVIEWS[0];
+
+function Stars({ rating, interactive = false, onRate }: { rating: number; interactive?: boolean; onRate?: (r: number) => void }) {
+  const [hovered, setHovered] = useState(0);
   return (
     <div className="flex gap-0.5">
       {[1,2,3,4,5].map((s) => (
-        <Star key={s} className={`w-3 h-3 ${s <= rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`} />
+        <Star
+          key={s}
+          onClick={() => interactive && onRate?.(s)}
+          onMouseEnter={() => interactive && setHovered(s)}
+          onMouseLeave={() => interactive && setHovered(0)}
+          className={`${interactive ? 'cursor-pointer hover:scale-110 transition-transform' : ''} ${
+            s <= (hovered || rating) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'
+          } ${interactive ? 'w-6 h-6' : 'w-3 h-3'}`}
+        />
       ))}
     </div>
   );
 }
 
 export default function Reviews() {
-  const { darkMode } = useStore();
+  const { darkMode, user } = useStore();
+  const [reviews, setReviews] = useState<Review[]>(INITIAL_REVIEWS);
   const [active, setActive] = useState(0);
-  const avg = (REVIEWS.reduce((s, r) => s + r.rating, 0) / REVIEWS.length).toFixed(1);
+  const [showForm, setShowForm] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [form, setForm] = useState({ name: user?.name ?? '', text: '', rating: 0 });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const avg = (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1);
+
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!form.name.trim()) e.name = 'Name required';
+    if (!form.text.trim() || form.text.length < 10) e.text = 'Please write at least 10 characters';
+    if (!form.rating) e.rating = 'Please select a rating';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+    const initials = form.name.trim().split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
+    const newReview: Review = {
+      name: form.name.trim(),
+      avatar: initials,
+      color: AVATAR_COLORS[reviews.length % AVATAR_COLORS.length],
+      rating: form.rating,
+      date: new Date().toLocaleDateString('en-RW', { month: 'long', year: 'numeric' }),
+      location: 'Rwanda',
+      text: form.text.trim(),
+      verified: false,
+    };
+    setReviews([newReview, ...reviews]);
+    setActive(0);
+    setSubmitted(true);
+    setTimeout(() => {
+      setSubmitted(false);
+      setShowForm(false);
+      setForm({ name: user?.name ?? '', text: '', rating: 0 });
+    }, 2000);
+  };
 
   return (
     <div className="space-y-4">
       {/* Header + rating summary */}
       <div className={`rounded-2xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-white border border-gray-100'} shadow-sm`}>
-        <h3 className={`font-extrabold text-base mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-          ⭐ Customer Reviews
-        </h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className={`font-extrabold text-base ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            ⭐ Customer Reviews
+          </h3>
+          <button
+            onClick={() => setShowForm((v) => !v)}
+            className={`flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-sm ${
+              showForm
+                ? darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
+                : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white hover:scale-105 active:scale-95'
+            }`}
+          >
+            {showForm ? <><X className="w-3.5 h-3.5" /> Cancel</> : <><PenLine className="w-3.5 h-3.5" /> Write Review</>}
+          </button>
+        </div>
+
         <div className="flex items-center gap-3">
           <div className="text-center">
             <div className="text-3xl font-extrabold gradient-text">{avg}</div>
-            <Stars rating={5} />
-            <p className={`text-xs mt-0.5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{REVIEWS.length} reviews</p>
+            <Stars rating={Math.round(parseFloat(avg))} />
+            <p className={`text-xs mt-0.5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{reviews.length} reviews</p>
           </div>
           <div className="flex-1 space-y-1">
-            {[5,4,3].map((star) => {
-              const count = REVIEWS.filter((r) => r.rating === star).length;
-              const pct = Math.round((count / REVIEWS.length) * 100);
+            {[5,4,3,2,1].map((star) => {
+              const count = reviews.filter((r) => r.rating === star).length;
+              const pct = Math.round((count / reviews.length) * 100);
               return (
                 <div key={star} className="flex items-center gap-1.5">
                   <span className={`text-xs w-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{star}</span>
                   <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
                   <div className={`flex-1 h-1.5 rounded-full overflow-hidden ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                    <div className="h-full bg-amber-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                    <div className="h-full bg-amber-400 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
                   </div>
                   <span className={`text-xs w-6 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{pct}%</span>
                 </div>
@@ -114,32 +186,93 @@ export default function Reviews() {
         </div>
       </div>
 
+      {/* Add Review Form */}
+      {showForm && (
+        <div className={`rounded-2xl p-4 border-2 border-orange-400 ${darkMode ? 'bg-gray-800' : 'bg-orange-50'} animate-slide-up`}>
+          {submitted ? (
+            <div className="text-center py-4">
+              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Check className="w-6 h-6 text-orange-500" />
+              </div>
+              <p className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Thank you!</p>
+              <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Your review has been posted.</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <h4 className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>Share your experience</h4>
+
+              {/* Star picker */}
+              <div>
+                <label className={`text-xs font-semibold block mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Your Rating</label>
+                <Stars rating={form.rating} interactive onRate={(r) => setForm({ ...form, rating: r })} />
+                {errors.rating && <p className="text-red-400 text-xs mt-0.5">{errors.rating}</p>}
+              </div>
+
+              {/* Name */}
+              <div>
+                <label className={`text-xs font-semibold block mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Your Name</label>
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="Enter your name"
+                  className={`w-full px-3 py-2 rounded-xl border text-sm outline-none transition ${
+                    errors.name ? 'border-red-400' : 'focus:border-orange-500'
+                  } ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-500' : 'bg-white border-gray-200 text-gray-900'}`}
+                />
+                {errors.name && <p className="text-red-400 text-xs mt-0.5">{errors.name}</p>}
+              </div>
+
+              {/* Review text */}
+              <div>
+                <label className={`text-xs font-semibold block mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Your Review</label>
+                <textarea
+                  value={form.text}
+                  onChange={(e) => setForm({ ...form, text: e.target.value })}
+                  placeholder="What did you think about Simba Supermarket?"
+                  rows={3}
+                  className={`w-full px-3 py-2 rounded-xl border text-sm outline-none transition resize-none ${
+                    errors.text ? 'border-red-400' : 'focus:border-orange-500'
+                  } ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-500' : 'bg-white border-gray-200 text-gray-900'}`}
+                />
+                {errors.text && <p className="text-red-400 text-xs mt-0.5">{errors.text}</p>}
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 rounded-xl text-sm transition-all hover:shadow-lg hover:shadow-orange-500/30"
+              >
+                Post Review
+              </button>
+            </form>
+          )}
+        </div>
+      )}
+
       {/* Featured review */}
       <div className={`relative overflow-hidden rounded-2xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100'}`}>
         <Quote className="absolute top-3 right-3 w-10 h-10 text-orange-200/60" />
         <div className="flex items-center gap-3 mb-3">
-          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${REVIEWS[active].color} flex items-center justify-center text-white font-bold text-sm shrink-0`}>
-            {REVIEWS[active].avatar}
+          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${reviews[active].color} flex items-center justify-center text-white font-bold text-sm shrink-0`}>
+            {reviews[active].avatar}
           </div>
           <div>
             <div className="flex items-center gap-1.5 flex-wrap">
-              <p className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{REVIEWS[active].name}</p>
-              {REVIEWS[active].verified && (
-                <span className="bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-medium">✓</span>
+              <p className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{reviews[active].name}</p>
+              {reviews[active].verified && (
+                <span className="bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-medium">✓ Verified</span>
               )}
             </div>
             <div className="flex items-center gap-1">
-              <Stars rating={REVIEWS[active].rating} />
-              <span className={`text-[10px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>· {REVIEWS[active].date}</span>
+              <Stars rating={reviews[active].rating} />
+              <span className={`text-[10px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>· {reviews[active].date}</span>
             </div>
           </div>
         </div>
         <p className={`text-xs leading-relaxed italic relative z-10 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-          &ldquo;{REVIEWS[active].text}&rdquo;
+          &ldquo;{reviews[active].text}&rdquo;
         </p>
-        {/* Dots */}
         <div className="flex gap-1.5 mt-3">
-          {REVIEWS.map((_, i) => (
+          {reviews.map((_, i) => (
             <button key={i} onClick={() => setActive(i)}
               className={`h-1 rounded-full transition-all duration-300 ${i === active ? 'w-5 bg-orange-500' : 'w-1 bg-orange-200'}`}
             />
@@ -149,16 +282,15 @@ export default function Reviews() {
 
       {/* Review list */}
       <div className="space-y-2">
-        {REVIEWS.map((review, i) => (
+        {reviews.map((review, i) => (
           <button
-            key={i}
+            key={`${review.name}-${i}`}
             onClick={() => setActive(i)}
             className={`w-full text-left p-3 rounded-xl border transition-all duration-200 hover:scale-[1.01] ${
               active === i
                 ? darkMode ? 'border-orange-500 bg-orange-500/10' : 'border-orange-400 bg-orange-50'
                 : darkMode ? 'border-gray-700 bg-gray-800 hover:border-gray-600' : 'border-gray-100 bg-white hover:border-orange-200'
-            } animate-slide-up opacity-0`}
-            style={{ animationDelay: `${i * 0.07}s`, animationFillMode: 'forwards' }}
+            }`}
           >
             <div className="flex items-center gap-2 mb-1.5">
               <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${review.color} flex items-center justify-center text-white font-bold text-xs shrink-0`}>

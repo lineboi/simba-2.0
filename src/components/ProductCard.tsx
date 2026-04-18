@@ -1,10 +1,10 @@
 'use client';
 
-import { ShoppingCart, Check } from 'lucide-react';
+import { ShoppingCart, Check, Star } from 'lucide-react';
 import { Product } from '@/lib/types';
 import { useStore } from '@/lib/store';
 import { t } from '@/lib/translations';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -15,6 +15,17 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const { addToCart, darkMode, language } = useStore();
   const [added, setAdded] = useState(false);
+
+  // Generate a stable random rating for demo purposes
+  const rating = useMemo(() => {
+    const hash = product.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return (hash % 2) + 4; // 4 or 5 stars
+  }, [product.name]);
+
+  const reviewCount = useMemo(() => {
+    const hash = product.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return (hash % 50) + 5;
+  }, [product.name]);
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -57,10 +68,17 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Info */}
         <div className="p-3">
-          <p className={`text-xs mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`}>
-            {product.category}
-          </p>
-          <h3 className={`font-medium text-sm leading-snug mb-2 line-clamp-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+          <div className="flex items-center justify-between mb-1">
+            <p className={`text-[10px] ${darkMode ? 'text-gray-400' : 'text-gray-400'}`}>
+              {product.category}
+            </p>
+            <div className="flex items-center gap-0.5">
+              <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
+              <span className={`text-[10px] font-bold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{rating}.0</span>
+              <span className={`text-[10px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>({reviewCount})</span>
+            </div>
+          </div>
+          <h3 className={`font-medium text-sm leading-snug mb-2 line-clamp-2 h-10 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             {product.name}
           </h3>
           <div className="flex items-center justify-between gap-2">
