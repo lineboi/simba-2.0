@@ -1,6 +1,6 @@
 'use client';
 
-import { ShoppingCart, Moon, Sun, Globe, Search, Menu, X } from 'lucide-react';
+import { ShoppingCart, Moon, Sun, Globe, Search, X, User, LogOut } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { t } from '@/lib/translations';
 import { Language } from '@/lib/types';
@@ -20,9 +20,10 @@ const LANGS: { code: Language; label: string }[] = [
 ];
 
 export default function Navbar({ onCartOpen, searchQuery, onSearchChange }: NavbarProps) {
-  const { darkMode, toggleDarkMode, language, setLanguage, cartCount } = useStore();
+  const { darkMode, toggleDarkMode, language, setLanguage, cartCount, user, logout } = useStore();
   const count = cartCount();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   return (
     <nav className={`sticky top-0 z-50 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'} border-b shadow-sm`}>
@@ -92,6 +93,48 @@ export default function Navbar({ onCartOpen, searchQuery, onSearchChange }: Navb
           >
             {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
+
+          {/* User / Login */}
+          <div className="relative">
+            {user ? (
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl transition ${darkMode ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}
+              >
+                <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">{user.name[0].toUpperCase()}</span>
+                </div>
+                <span className="text-sm font-medium hidden sm:block">{user.name}</span>
+              </button>
+            ) : (
+              <Link href="/login">
+                <button className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition ${darkMode ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}>
+                  <User className="w-4 h-4" />
+                  <span className="hidden sm:block">Sign in</span>
+                </button>
+              </Link>
+            )}
+
+            {/* User dropdown */}
+            {userMenuOpen && user && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+                <div className={`absolute right-0 top-12 z-50 w-52 rounded-2xl shadow-xl border p-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+                  <div className={`px-3 py-2 mb-1 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                    <p className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{user.name}</p>
+                    <p className={`text-xs truncate ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{user.email}</p>
+                  </div>
+                  <button
+                    onClick={() => { logout(); setUserMenuOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign out
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Cart */}
           <button

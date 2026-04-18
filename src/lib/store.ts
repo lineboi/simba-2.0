@@ -2,10 +2,16 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CartItem, Product, Language } from './types';
 
+interface User {
+  name: string;
+  email: string;
+}
+
 interface AppState {
   cart: CartItem[];
   language: Language;
   darkMode: boolean;
+  user: User | null;
   addToCart: (product: Product) => void;
   removeFromCart: (productId: number) => void;
   updateQuantity: (productId: number, quantity: number) => void;
@@ -14,6 +20,8 @@ interface AppState {
   toggleDarkMode: () => void;
   cartCount: () => number;
   cartTotal: () => number;
+  login: (user: User) => void;
+  logout: () => void;
 }
 
 export const useStore = create<AppState>()(
@@ -22,6 +30,7 @@ export const useStore = create<AppState>()(
       cart: [],
       language: 'en',
       darkMode: false,
+      user: null,
 
       addToCart: (product) => {
         const cart = get().cart;
@@ -56,15 +65,13 @@ export const useStore = create<AppState>()(
       },
 
       clearCart: () => set({ cart: [] }),
-
       setLanguage: (lang) => set({ language: lang }),
-
       toggleDarkMode: () => set({ darkMode: !get().darkMode }),
-
       cartCount: () => get().cart.reduce((sum, item) => sum + item.quantity, 0),
-
       cartTotal: () =>
         get().cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
+      login: (user) => set({ user }),
+      logout: () => set({ user: null }),
     }),
     { name: 'simba-store' }
   )
