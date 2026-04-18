@@ -11,6 +11,7 @@ import CategoryFilter from '@/components/CategoryFilter';
 import Hero from '@/components/Hero';
 import Reviews from '@/components/Reviews';
 import Footer from '@/components/Footer';
+import Ads from '@/components/Ads';
 import { ArrowUpDown, ChevronUp, Flame, Sparkles, ChevronDown } from 'lucide-react';
 
 const PAGE_SIZE = 30;
@@ -168,10 +169,15 @@ export default function Home() {
           </section>
         )}
 
-        {/* PRODUCTS + REVIEWS SIDE BY SIDE */}
-        <div ref={productsRef} className="flex flex-col lg:flex-row gap-12 items-start">
+        {/* 3-COLUMN LAYOUT: ADS + PRODUCTS + REVIEWS */}
+        <div ref={productsRef} className="flex flex-col lg:flex-row gap-8 items-start">
+          
+          {/* LEFT — Ads sidebar (Professional Ads) */}
+          <div className="hidden xl:block w-64 shrink-0 sticky top-24">
+            <Ads />
+          </div>
 
-          {/* LEFT — Products */}
+          {/* MIDDLE — Products grid */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-4">
               <h2 className={`text-xl font-extrabold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -213,7 +219,7 @@ export default function Home() {
 
             {/* Grid */}
             {!data ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div key={i} className={`rounded-2xl h-64 animate-pulse ${darkMode ? 'bg-gray-800' : 'bg-gray-200'}`} />
                 ))}
@@ -229,7 +235,7 @@ export default function Home() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-4">
                   {visible.map((product, i) => (
                     <div key={product.id} className="animate-slide-up opacity-0" style={{ animationDelay: `${Math.min(i, 15) * 0.04}s`, animationFillMode: 'forwards' }}>
                       <ProductCard product={product} />
