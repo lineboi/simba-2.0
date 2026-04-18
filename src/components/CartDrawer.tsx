@@ -3,6 +3,7 @@
 import { X, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { t } from '@/lib/translations';
+import { getProductImage } from '@/lib/productImages';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -66,10 +67,10 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
               >
                 <div className="relative w-16 h-16 shrink-0 rounded-lg overflow-hidden bg-white">
                   <Image
-                    src={item.product.image}
+                    src={getProductImage(item.product.name, item.product.category)}
                     alt={item.product.name}
                     fill
-                    className="object-contain p-1"
+                    className="object-cover rounded-lg"
                     unoptimized
                   />
                 </div>

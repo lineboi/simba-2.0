@@ -4,6 +4,7 @@ import { ShoppingCart, Check } from 'lucide-react';
 import { Product } from '@/lib/types';
 import { useStore } from '@/lib/store';
 import { t } from '@/lib/translations';
+import { getProductImage } from '@/lib/productImages';
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -25,6 +26,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   const formattedPrice = new Intl.NumberFormat('en-RW').format(product.price);
+  const imgSrc = getProductImage(product.name, product.category);
 
   return (
     <Link href={`/product/${product.id}`}>
@@ -36,10 +38,10 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* Image */}
         <div className="relative h-44 bg-gray-50 overflow-hidden">
           <Image
-            src={product.image}
+            src={imgSrc}
             alt={product.name}
             fill
-            className="object-contain p-3 group-hover:scale-105 transition-transform duration-300"
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             unoptimized
           />
