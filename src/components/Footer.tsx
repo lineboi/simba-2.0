@@ -51,7 +51,7 @@ export default function Footer() {
     <footer className={`mt-20 border-t ${darkMode ? 'bg-gray-950 border-gray-800' : 'bg-white border-gray-100'}`}>
       {/* Top Value Props */}
       <div className={`border-b ${darkMode ? 'border-gray-800' : 'border-gray-100'}`}>
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="max-w-[1600px] mx-auto px-4 py-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-500">
@@ -84,17 +84,17 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 pt-16 pb-8">
+      <div className="max-w-[1600px] mx-auto px-4 pt-16 pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-12 mb-16">
           {/* Brand Info */}
           <div className="space-y-6">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20">
-                <span className="text-white font-black text-xl">S</span>
+              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center shadow-lg shadow-orange-500/20">
+                <span className="text-white font-bold text-lg">S</span>
               </div>
               <div>
-                <div className={`font-black text-lg leading-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>Simba</div>
-                <div className="text-[10px] text-orange-500 font-bold uppercase tracking-wider">Supermarket</div>
+                <div className={`font-bold text-base leading-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>Simba</div>
+                <div className="text-[10px] text-orange-500 font-bold uppercase tracking-tighter leading-tight">Supermarket</div>
               </div>
             </div>
             <p className={`text-sm leading-relaxed ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>

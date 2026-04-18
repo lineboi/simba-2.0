@@ -99,7 +99,7 @@ export default function Home() {
       <Navbar onCartOpen={() => setCartOpen(true)} searchQuery={search} onSearchChange={setSearch} />
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
-      <main className="max-w-7xl mx-auto px-4 py-6 space-y-10">
+      <main className="max-w-[1600px] mx-auto px-4 py-6 space-y-10">
         {/* HERO */}
         <Hero onShopNow={scrollToProducts} />
 
