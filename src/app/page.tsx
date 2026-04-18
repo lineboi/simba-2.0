@@ -9,22 +9,24 @@ import ProductCard from '@/components/ProductCard';
 import CartDrawer from '@/components/CartDrawer';
 import CategoryFilter from '@/components/CategoryFilter';
 import Hero from '@/components/Hero';
-import { ArrowUpDown, ChevronUp, Flame, Sparkles } from 'lucide-react';
 import Reviews from '@/components/Reviews';
+import { ArrowUpDown, ChevronUp, Flame, Sparkles, ChevronDown } from 'lucide-react';
+
+const PAGE_SIZE = 30;
 
 const CATEGORY_META: Record<string, { emoji: string; color: string }> = {
-  'Food Products':            { emoji: '🥬', color: 'from-green-400 to-emerald-500' },
-  'Cosmetics & Personal Care':{ emoji: '🧴', color: 'from-pink-400 to-rose-500' },
-  'Cleaning & Sanitary':      { emoji: '🧹', color: 'from-blue-400 to-cyan-500' },
-  'Alcoholic Drinks':         { emoji: '🍺', color: 'from-amber-400 to-yellow-500' },
-  'Baby Products':            { emoji: '👶', color: 'from-yellow-300 to-amber-400' },
-  'Kitchenware & Electronics':{ emoji: '🍳', color: 'from-slate-400 to-gray-500' },
-  'Kitchen Storage':          { emoji: '🫙', color: 'from-orange-300 to-amber-400' },
-  'Sports & Fitness':         { emoji: '💪', color: 'from-red-400 to-orange-500' },
-  'Sports & Wellness':        { emoji: '🏃', color: 'from-teal-400 to-cyan-500' },
-  'Stationery':               { emoji: '📚', color: 'from-indigo-400 to-purple-500' },
-  'Pet Care':                 { emoji: '🐾', color: 'from-orange-400 to-red-400' },
-  'General':                  { emoji: '🛒', color: 'from-gray-400 to-slate-500' },
+  'Food Products':             { emoji: '🥬', color: 'from-green-400 to-emerald-500' },
+  'Cosmetics & Personal Care': { emoji: '🧴', color: 'from-pink-400 to-rose-500' },
+  'Cleaning & Sanitary':       { emoji: '🧹', color: 'from-blue-400 to-cyan-500' },
+  'Alcoholic Drinks':          { emoji: '🍺', color: 'from-amber-400 to-yellow-500' },
+  'Baby Products':             { emoji: '👶', color: 'from-yellow-300 to-amber-400' },
+  'Kitchenware & Electronics': { emoji: '🍳', color: 'from-slate-400 to-gray-500' },
+  'Kitchen Storage':           { emoji: '🫙', color: 'from-orange-300 to-amber-400' },
+  'Sports & Fitness':          { emoji: '💪', color: 'from-red-400 to-orange-500' },
+  'Sports & Wellness':         { emoji: '🏃', color: 'from-teal-400 to-cyan-500' },
+  'Stationery':                { emoji: '📚', color: 'from-indigo-400 to-purple-500' },
+  'Pet Care':                  { emoji: '🐾', color: 'from-orange-400 to-red-400' },
+  'General':                   { emoji: '🛒', color: 'from-gray-400 to-slate-500' },
 };
 
 export default function Home() {
@@ -36,6 +38,7 @@ export default function Home() {
   const [cartOpen, setCartOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [catVisible, setCatVisible] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const productsRef = useRef<HTMLDivElement>(null);
   const catRef = useRef<HTMLDivElement>(null);
 
@@ -43,20 +46,21 @@ export default function Home() {
     fetch('/simba_products.json').then((r) => r.json()).then(setData);
   }, []);
 
-  // Show scroll-to-top button
   useEffect(() => {
     const onScroll = () => setShowScrollTop(window.scrollY > 400);
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Intersection observer for category section
   useEffect(() => {
     if (!catRef.current) return;
     const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setCatVisible(true); }, { threshold: 0.1 });
     obs.observe(catRef.current);
     return () => obs.disconnect();
   }, []);
+
+  // Reset pagination when filter changes
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [category, search, sort]);
 
   const categories = useMemo(() => {
     if (!data) return [];
@@ -76,7 +80,9 @@ export default function Home() {
     return products;
   }, [data, category, search, sort]);
 
-  // Featured = first 5 in-stock products
+  const visible = filtered.slice(0, visibleCount);
+  const hasMore = visibleCount < filtered.length;
+
   const featured = useMemo(() => (data?.products ?? []).filter((p) => p.inStock).slice(0, 5), [data]);
 
   const scrollToProducts = () => productsRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -93,22 +99,17 @@ export default function Home() {
 
         {/* PROMO BANNER */}
         <div className={`relative overflow-hidden rounded-2xl p-5 flex items-center gap-4 ${darkMode ? 'bg-gradient-to-r from-orange-900/40 to-amber-900/20 border border-orange-800/30' : 'bg-gradient-to-r from-orange-500 to-amber-500'}`}>
-          <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0 overflow-hidden">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="absolute w-24 h-24 rounded-full bg-white" style={{ left: `${i * 18}%`, top: '-20%', opacity: 0.3 }} />
+              <div key={i} className="absolute w-24 h-24 rounded-full bg-white/10" style={{ left: `${i * 18}%`, top: '-20%' }} />
             ))}
           </div>
-          <div className={`shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center text-2xl ${darkMode ? 'bg-orange-500/20' : 'bg-white/20'}`}>
-            🚀
-          </div>
-          <div className="flex-1 min-w-0">
+          <div className={`shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center text-2xl ${darkMode ? 'bg-orange-500/20' : 'bg-white/20'}`}>🚀</div>
+          <div className="flex-1 min-w-0 relative">
             <p className="font-extrabold text-white text-base">Free Delivery on All Orders in Kigali!</p>
             <p className="text-white/80 text-sm">Shop now and get your order within 24 hours</p>
           </div>
-          <button
-            onClick={scrollToProducts}
-            className="shrink-0 bg-white text-orange-600 font-bold text-sm px-4 py-2 rounded-xl hover:scale-105 transition-transform shadow"
-          >
+          <button onClick={scrollToProducts} className="relative shrink-0 bg-white text-orange-600 font-bold text-sm px-4 py-2 rounded-xl hover:scale-105 transition-transform shadow">
             Shop Now
           </button>
         </div>
@@ -117,33 +118,26 @@ export default function Home() {
         <section ref={catRef}>
           <div className="flex items-center gap-2 mb-5">
             <Sparkles className="w-5 h-5 text-orange-500" />
-            <h2 className={`text-xl font-extrabold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              {t(language, 'shopByCategory')}
-            </h2>
+            <h2 className={`text-xl font-extrabold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{t(language, 'shopByCategory')}</h2>
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-12 gap-3">
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-12 gap-2">
             {categories.map((cat, i) => {
               const meta = CATEGORY_META[cat] ?? { emoji: '🛒', color: 'from-gray-400 to-slate-500' };
               return (
                 <button
                   key={cat}
                   onClick={() => { setCategory(cat); scrollToProducts(); }}
-                  className={`group flex flex-col items-center gap-2 p-3 rounded-2xl transition-all duration-300 ${
-                    catVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-                  } ${category === cat
-                    ? `bg-gradient-to-br ${meta.color} shadow-lg scale-105`
-                    : darkMode ? 'bg-gray-800 hover:bg-gray-700 hover:scale-105' : 'bg-white hover:shadow-md hover:scale-105 border border-gray-100'
+                  className={`group flex flex-col items-center gap-1.5 p-2.5 rounded-2xl transition-all duration-300 ${catVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'} ${
+                    category === cat
+                      ? `bg-gradient-to-br ${meta.color} shadow-lg scale-105`
+                      : darkMode ? 'bg-gray-800 hover:bg-gray-700 hover:scale-105' : 'bg-white hover:shadow-md hover:scale-105 border border-gray-100'
                   }`}
-                  style={{ transitionDelay: `${i * 50}ms` }}
+                  style={{ transitionDelay: `${i * 40}ms` }}
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-transform group-hover:scale-110 ${
-                    category === cat ? 'bg-white/20' : darkMode ? 'bg-gray-700' : 'bg-gray-50'
-                  }`}>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg transition-transform group-hover:scale-110 ${category === cat ? 'bg-white/20' : darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                     {meta.emoji}
                   </div>
-                  <span className={`text-xs text-center font-semibold leading-tight ${
-                    category === cat ? 'text-white' : darkMode ? 'text-gray-300' : 'text-gray-700'
-                  }`}>
+                  <span className={`text-[10px] text-center font-semibold leading-tight ${category === cat ? 'text-white' : darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                     {cat.split(' ')[0]}
                   </span>
                 </button>
@@ -152,22 +146,16 @@ export default function Home() {
           </div>
         </section>
 
-        {/* FEATURED STRIP */}
+        {/* FEATURED */}
         {!category && !search && featured.length > 0 && (
           <section>
             <div className="flex items-center gap-2 mb-4">
               <Flame className="w-5 h-5 text-orange-500" />
-              <h2 className={`text-xl font-extrabold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                {t(language, 'featured')}
-              </h2>
+              <h2 className={`text-xl font-extrabold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{t(language, 'featured')}</h2>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
               {featured.map((product, i) => (
-                <div
-                  key={product.id}
-                  className="animate-slide-up opacity-0"
-                  style={{ animationDelay: `${i * 0.08}s`, animationFillMode: 'forwards' }}
-                >
+                <div key={product.id} className="animate-slide-up opacity-0" style={{ animationDelay: `${i * 0.08}s`, animationFillMode: 'forwards' }}>
                   <ProductCard product={product} />
                 </div>
               ))}
@@ -175,91 +163,96 @@ export default function Home() {
           </section>
         )}
 
-        {/* ALL PRODUCTS */}
-        <div ref={productsRef}>
-          <div className="flex items-center gap-2 mb-5">
-            <h2 className={`text-xl font-extrabold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              {category || t(language, 'allCategories')}
-            </h2>
-            {category && (
-              <button
-                onClick={() => setCategory('')}
-                className="text-xs text-orange-500 hover:text-orange-600 font-medium px-2 py-0.5 rounded-lg border border-orange-200 hover:border-orange-400 transition"
-              >
-                ✕ Clear
-              </button>
+        {/* PRODUCTS + REVIEWS SIDE BY SIDE */}
+        <div ref={productsRef} className="flex flex-col lg:flex-row gap-6 items-start">
+
+          {/* LEFT — Products */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className={`text-xl font-extrabold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                {category || t(language, 'allCategories')}
+              </h2>
+              {category && (
+                <button onClick={() => setCategory('')} className="text-xs text-orange-500 border border-orange-200 hover:border-orange-400 px-2 py-0.5 rounded-lg transition">
+                  ✕ Clear
+                </button>
+              )}
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-4">
+              <div className="flex-1 overflow-x-auto scrollbar-hide">
+                <CategoryFilter categories={categories} selected={category} onSelect={setCategory} />
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <ArrowUpDown className={`w-4 h-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                <select
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value)}
+                  className={`text-sm px-3 py-2 rounded-xl border outline-none ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-700'}`}
+                >
+                  <option value="">{t(language, 'sortBy')}</option>
+                  <option value="price-asc">{t(language, 'priceAsc')}</option>
+                  <option value="price-desc">{t(language, 'priceDesc')}</option>
+                  <option value="name-az">{t(language, 'nameAz')}</option>
+                </select>
+              </div>
+            </div>
+
+            <p className={`text-sm mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Showing <span className="font-bold text-orange-500">{visible.length}</span> of{' '}
+              <span className="font-bold text-orange-500">{filtered.length}</span> {t(language, 'products')}
+              {category && ` in ${category}`}
+              {search && ` matching "${search}"`}
+            </p>
+
+            {/* Grid */}
+            {!data ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className={`rounded-2xl h-64 animate-pulse ${darkMode ? 'bg-gray-800' : 'bg-gray-200'}`} />
+                ))}
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-24 animate-fade-in">
+                <div className="text-6xl mb-4">🔍</div>
+                <p className={`text-xl font-bold mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{t(language, 'noProducts')}</p>
+                <p className={`mb-6 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{t(language, 'tryDifferent')}</p>
+                <button onClick={() => { setSearch(''); setCategory(''); }} className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-xl font-semibold transition">
+                  Clear filters
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {visible.map((product, i) => (
+                    <div key={product.id} className="animate-slide-up opacity-0" style={{ animationDelay: `${Math.min(i, 15) * 0.04}s`, animationFillMode: 'forwards' }}>
+                      <ProductCard product={product} />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Load More */}
+                {hasMore && (
+                  <div className="mt-8 text-center">
+                    <button
+                      onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                      className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 py-3.5 rounded-2xl transition-all hover:shadow-lg hover:shadow-orange-500/30 hover:scale-105"
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                      Show More ({filtered.length - visibleCount} remaining)
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
-          {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <div className="flex-1 overflow-x-auto scrollbar-hide">
-              <CategoryFilter categories={categories} selected={category} onSelect={setCategory} />
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <ArrowUpDown className={`w-4 h-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-                className={`text-sm px-3 py-2 rounded-xl border outline-none ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-700'}`}
-              >
-                <option value="">{t(language, 'sortBy')}</option>
-                <option value="price-asc">{t(language, 'priceAsc')}</option>
-                <option value="price-desc">{t(language, 'priceDesc')}</option>
-                <option value="name-az">{t(language, 'nameAz')}</option>
-              </select>
-            </div>
+          {/* RIGHT — Reviews sidebar */}
+          <div className="w-full lg:w-80 xl:w-96 shrink-0 lg:sticky lg:top-24">
+            <Reviews />
           </div>
-
-          {/* Count */}
-          <p className={`text-sm mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            <span className="font-bold text-orange-500">{filtered.length}</span>{' '}
-            {t(language, 'products')}
-            {category && ` in ${category}`}
-            {search && ` matching "${search}"`}
-          </p>
-
-          {/* Grid */}
-          {!data ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
-              {[...Array(10)].map((_, i) => (
-                <div key={i} className={`rounded-2xl h-64 animate-pulse ${darkMode ? 'bg-gray-800' : 'bg-gray-200'}`}
-                  style={{ animationDelay: `${i * 0.05}s` }} />
-              ))}
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-24 animate-fade-in">
-              <div className="text-6xl mb-4">🔍</div>
-              <p className={`text-xl font-bold mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                {t(language, 'noProducts')}
-              </p>
-              <p className={`mb-6 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                {t(language, 'tryDifferent')}
-              </p>
-              <button
-                onClick={() => { setSearch(''); setCategory(''); }}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-xl font-semibold transition"
-              >
-                Clear filters
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
-              {filtered.map((product, i) => (
-                <div
-                  key={product.id}
-                  className="animate-slide-up opacity-0"
-                  style={{ animationDelay: `${Math.min(i, 20) * 0.04}s`, animationFillMode: 'forwards' }}
-                >
-                  <ProductCard product={product} />
-                </div>
-              ))}
-            </div>
-          )}
         </div>
-
-        {/* Reviews */}
-        <Reviews />
       </main>
 
       {/* Footer */}
@@ -274,18 +267,14 @@ export default function Home() {
               <div className="text-xs text-orange-500">Rwanda&apos;s Online Supermarket</div>
             </div>
           </div>
-          <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-            © 2025 Simba Supermarket · Kigali, Rwanda
-          </p>
+          <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>© 2025 Simba Supermarket · Kigali, Rwanda</p>
         </div>
       </footer>
 
       {/* Scroll to top */}
       <button
         onClick={scrollToTop}
-        className={`fixed bottom-6 right-6 w-11 h-11 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 z-40 ${
-          showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
-        }`}
+        className={`fixed bottom-6 right-6 w-11 h-11 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 z-40 ${showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}
       >
         <ChevronUp className="w-5 h-5" />
       </button>
