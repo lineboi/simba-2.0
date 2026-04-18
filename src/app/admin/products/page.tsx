@@ -18,7 +18,10 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
-  LayoutDashboard
+  LayoutDashboard,
+  X,
+  Upload,
+  Loader2
 } from 'lucide-react';
 import { ProductsData, Product } from '@/lib/types';
 import Link from 'next/link';
@@ -31,6 +34,18 @@ export default function AdminProducts() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
+  
+  // Modal states
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    price: '',
+    category: '',
+    inStock: true,
+    image: '',
+    unit: 'Pcs'
+  });
 
   useEffect(() => {
     if (!user?.isAdmin) {
@@ -45,14 +60,6 @@ export default function AdminProducts() {
       });
   }, [user, router]);
 
-  if (!user?.isAdmin || loading) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'}`}>
-        <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   const categories = [...new Set(data?.products.map(p => p.category) || [])].sort();
   
   const filtered = (data?.products || []).filter(p => {
@@ -61,9 +68,47 @@ export default function AdminProducts() {
     return matchesSearch && matchesCat;
   });
 
+  const handleAddProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      const product: Product = {
+        id: Math.floor(Math.random() * 10000) + 20000,
+        name: newProduct.name,
+        price: parseFloat(newProduct.price),
+        category: newProduct.category || 'General',
+        subcategoryId: 1,
+        inStock: newProduct.inStock,
+        image: newProduct.image || 'https://via.placeholder.com/400',
+        unit: newProduct.unit
+      };
+
+      if (data) {
+        setData({
+          ...data,
+          products: [product, ...data.products]
+        });
+      }
+
+      setIsSubmitting(false);
+      setIsAddModalOpen(false);
+      setNewProduct({ name: '', price: '', category: '', inStock: true, image: '', unit: 'Pcs' });
+    }, 1000);
+  };
+
+  if (!user?.isAdmin || loading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'}`}>
+        <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'} flex`}>
-      {/* Sidebar (reused from dashboard) */}
+      {/* Sidebar */}
       <aside className={`w-64 shrink-0 border-r hidden lg:flex flex-col ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
         <div className="p-6">
           <Link href="/" className="flex items-center gap-2">
@@ -86,7 +131,6 @@ export default function AdminProducts() {
             <Package className="w-5 h-5" />
             Products
           </Link>
-          {/* ... other nav links ... */}
         </nav>
       </aside>
 
@@ -97,7 +141,10 @@ export default function AdminProducts() {
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{filtered.length} total products listed</p>
           </div>
           <div className="flex items-center gap-3">
-             <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-orange-500/20 transition-all flex items-center gap-2">
+             <button 
+              onClick={() => setIsAddModalOpen(true)}
+              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-orange-500/20 transition-all flex items-center gap-2"
+             >
                 <Plus className="w-4 h-4" /> Add Product
              </button>
           </div>
@@ -200,6 +247,123 @@ export default function AdminProducts() {
           </div>
         </div>
       </main>
+
+      {/* Add Product Modal */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-gray-950/40 backdrop-blur-sm animate-fade-in" 
+            onClick={() => setIsAddModalOpen(false)} 
+          />
+          <div className={`relative w-full max-w-xl overflow-hidden rounded-2xl shadow-2xl border animate-slide-up flex flex-col ${
+            darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-100 text-gray-900'
+          }`}>
+            <div className={`px-6 py-4 border-b flex items-center justify-between ${darkMode ? 'border-gray-800' : 'border-gray-100'}`}>
+              <h2 className="text-lg font-bold">Add New Product</h2>
+              <button onClick={() => setIsAddModalOpen(false)} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddProduct} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Product Name</label>
+                  <input 
+                    required
+                    type="text" 
+                    value={newProduct.name}
+                    onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
+                    placeholder="e.g., Organic Bananas"
+                    className={`w-full px-4 py-2.5 rounded-xl border text-sm outline-none transition-all ${darkMode ? 'bg-gray-800 border-gray-700 focus:border-orange-500' : 'bg-gray-50 border-gray-200 focus:border-orange-500'}`}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Price (RWF)</label>
+                  <input 
+                    required
+                    type="number" 
+                    value={newProduct.price}
+                    onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
+                    placeholder="0"
+                    className={`w-full px-4 py-2.5 rounded-xl border text-sm outline-none transition-all ${darkMode ? 'bg-gray-800 border-gray-700 focus:border-orange-500' : 'bg-gray-50 border-gray-200 focus:border-orange-500'}`}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Unit</label>
+                  <select 
+                    value={newProduct.unit}
+                    onChange={(e) => setNewProduct({...newProduct, unit: e.target.value})}
+                    className={`w-full px-4 py-2.5 rounded-xl border text-sm outline-none ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}
+                  >
+                    <option value="Pcs">Pcs</option>
+                    <option value="Kg">Kg</option>
+                    <option value="Box">Box</option>
+                    <option value="Bottle">Bottle</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Category</label>
+                  <select 
+                    required
+                    value={newProduct.category}
+                    onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+                    className={`w-full px-4 py-2.5 rounded-xl border text-sm outline-none ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}
+                  >
+                    <option value="">Select Category</option>
+                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="flex items-end pb-1.5">
+                   <label className="flex items-center gap-2 cursor-pointer group">
+                      <input 
+                        type="checkbox" 
+                        checked={newProduct.inStock}
+                        onChange={(e) => setNewProduct({...newProduct, inStock: e.target.checked})}
+                        className="w-4 h-4 accent-orange-500" 
+                      />
+                      <span className="text-sm font-bold text-gray-600 dark:text-gray-400 group-hover:text-orange-500 transition-colors">In Stock</span>
+                   </label>
+                </div>
+                <div className="col-span-2">
+                   <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Product Image URL</label>
+                   <div className="flex gap-2">
+                     <div className="flex-1 relative">
+                        <input 
+                          type="text" 
+                          value={newProduct.image}
+                          onChange={(e) => setNewProduct({...newProduct, image: e.target.value})}
+                          placeholder="https://..."
+                          className={`w-full px-4 py-2.5 rounded-xl border text-sm outline-none transition-all ${darkMode ? 'bg-gray-800 border-gray-700 focus:border-orange-500' : 'bg-gray-50 border-gray-200 focus:border-orange-500'}`}
+                        />
+                     </div>
+                     <button type="button" className={`p-2.5 rounded-xl border flex items-center justify-center ${darkMode ? 'border-gray-700 hover:bg-gray-800 text-gray-400' : 'border-gray-200 hover:bg-gray-50 text-gray-500'}`}>
+                        <Upload className="w-4 h-4" />
+                     </button>
+                   </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t dark:border-gray-800 flex gap-3">
+                 <button 
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${darkMode ? 'bg-gray-800 text-gray-400 hover:bg-gray-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                 >
+                   Cancel
+                 </button>
+                 <button 
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-[2] bg-orange-500 hover:bg-orange-600 disabled:opacity-70 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-orange-500/20 transition-all flex items-center justify-center gap-2"
+                 >
+                   {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Adding...</> : 'Save Product'}
+                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
