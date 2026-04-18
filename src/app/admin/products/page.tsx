@@ -21,7 +21,9 @@ import {
   LayoutDashboard,
   X,
   Upload,
-  Loader2
+  Loader2,
+  ShoppingCart,
+  Users
 } from 'lucide-react';
 import { ProductsData, Product } from '@/lib/types';
 import Link from 'next/link';
