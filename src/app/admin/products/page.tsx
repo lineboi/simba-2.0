@@ -81,7 +81,7 @@ export default function AdminProducts() {
         category: newProduct.category || 'General',
         subcategoryId: 1,
         inStock: newProduct.inStock,
-        image: newProduct.image || 'https://via.placeholder.com/400',
+        image: newProduct.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=400&auto=format&fit=crop',
         unit: newProduct.unit
       };
 
@@ -95,7 +95,30 @@ export default function AdminProducts() {
       setIsSubmitting(false);
       setIsAddModalOpen(false);
       setNewProduct({ name: '', price: '', category: '', inStock: true, image: '', unit: 'Pcs' });
-    }, 1000);
+    }, 800);
+  };
+
+  const handleDeleteProduct = (id: number) => {
+    if (confirm('Are you sure you want to delete this product?')) {
+      if (data) {
+        setData({
+          ...data,
+          products: data.products.filter(p => p.id !== id)
+        });
+      }
+    }
+  };
+
+  const handleImageUpload = () => {
+    // Simulate a file upload by picking a random high-quality product image
+    const demoImages = [
+      'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=400&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1588964895597-cfccd6e2dbf9?q=80&w=400&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1550989460-0adf9ea622e2?q=80&w=400&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1608686209041-723604bc0d44?q=80&w=400&auto=format&fit=crop'
+    ];
+    const randomImg = demoImages[Math.floor(Math.random() * demoImages.length)];
+    setNewProduct({ ...newProduct, image: randomImg });
   };
 
   if (!user?.isAdmin || loading) {
@@ -173,8 +196,12 @@ export default function AdminProducts() {
                     <option value="">All Categories</option>
                     {categories.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
-                  <button className={`p-2 rounded-xl border transition-all ${darkMode ? 'border-gray-800 hover:bg-gray-800 text-gray-400' : 'border-gray-200 hover:bg-gray-50 text-gray-500'}`}>
-                    <ArrowUpDown className="w-4 h-4" />
+                  <button 
+                    onClick={() => {setSearch(''); setCategory('');}}
+                    className={`p-2 rounded-xl border transition-all ${darkMode ? 'border-gray-800 hover:bg-gray-800 text-gray-400' : 'border-gray-200 hover:bg-gray-50 text-gray-500'}`}
+                    title="Clear Filters"
+                  >
+                    <X className="w-4 h-4" />
                   </button>
                </div>
             </div>
@@ -224,7 +251,13 @@ export default function AdminProducts() {
                       <td className="px-6 py-4 text-right">
                          <div className="flex items-center justify-end gap-2">
                            <button className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 transition-colors" title="Edit"><Edit2 className="w-4 h-4" /></button>
-                           <button className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                           <button 
+                            onClick={() => handleDeleteProduct(p.id)}
+                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-colors" 
+                            title="Delete"
+                           >
+                            <Trash2 className="w-4 h-4" />
+                           </button>
                            <Link href={`/product/${p.id}`} target="_blank" className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-500/10 text-gray-400 hover:text-blue-500 transition-colors">
                               <ExternalLink className="w-4 h-4" />
                            </Link>
@@ -326,20 +359,38 @@ export default function AdminProducts() {
                    </label>
                 </div>
                 <div className="col-span-2">
-                   <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Product Image URL</label>
-                   <div className="flex gap-2">
-                     <div className="flex-1 relative">
+                   <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Product Image</label>
+                   <div className="flex flex-col gap-3">
+                     {newProduct.image ? (
+                       <div className="relative w-full h-32 rounded-xl overflow-hidden border dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                          <Image src={newProduct.image} alt="Preview" fill className="object-contain p-2" unoptimized />
+                          <button 
+                            type="button"
+                            onClick={() => setNewProduct({...newProduct, image: ''})}
+                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:scale-110 transition-transform"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                       </div>
+                     ) : (
+                       <button 
+                        type="button"
+                        onClick={handleImageUpload}
+                        className={`w-full h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all ${darkMode ? 'border-gray-700 hover:border-orange-500/50 hover:bg-gray-800' : 'border-gray-200 hover:border-orange-500/50 hover:bg-orange-50/30'}`}
+                       >
+                          <Upload className="w-6 h-6 text-gray-400" />
+                          <span className="text-xs font-bold text-gray-500">Click to upload image</span>
+                       </button>
+                     )}
+                     <div className="relative">
                         <input 
                           type="text" 
                           value={newProduct.image}
                           onChange={(e) => setNewProduct({...newProduct, image: e.target.value})}
-                          placeholder="https://..."
-                          className={`w-full px-4 py-2.5 rounded-xl border text-sm outline-none transition-all ${darkMode ? 'bg-gray-800 border-gray-700 focus:border-orange-500' : 'bg-gray-50 border-gray-200 focus:border-orange-500'}`}
+                          placeholder="Or paste image URL here..."
+                          className={`w-full px-4 py-2 rounded-xl border text-[10px] outline-none transition-all ${darkMode ? 'bg-gray-800 border-gray-700 focus:border-orange-500' : 'bg-gray-50 border-gray-200 focus:border-orange-500'}`}
                         />
                      </div>
-                     <button type="button" className={`p-2.5 rounded-xl border flex items-center justify-center ${darkMode ? 'border-gray-700 hover:bg-gray-800 text-gray-400' : 'border-gray-200 hover:bg-gray-50 text-gray-500'}`}>
-                        <Upload className="w-4 h-4" />
-                     </button>
                    </div>
                 </div>
               </div>
