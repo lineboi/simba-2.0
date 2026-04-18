@@ -13,7 +13,7 @@ interface CartDrawerProps {
 }
 
 export default function CartDrawer({ open, onClose }: CartDrawerProps) {
-  const { cart, darkMode, language, removeFromCart, updateQuantity, cartTotal } = useStore();
+  const { cart, darkMode, language, removeFromCart, updateQuantity, cartTotal, clearCart } = useStore();
   const total = cartTotal();
 
   const formatted = (n: number) => new Intl.NumberFormat('en-RW').format(n);
@@ -49,14 +49,31 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
               {cart.length} {cart.length === 1 ? 'Item' : 'Items'}
             </span>
           </div>
-          <button 
-            onClick={onClose} 
-            className={`p-1.5 rounded-lg transition-colors ${
-              darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-50 text-gray-400'
-            }`}
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {cart.length > 0 && (
+              <button 
+                onClick={() => {
+                  if (confirm('Are you sure you want to clear your entire cart?')) {
+                    clearCart();
+                  }
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                  darkMode ? 'text-red-400 hover:bg-red-500/10' : 'text-red-500 hover:bg-red-50'
+                }`}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Clear All
+              </button>
+            )}
+            <button 
+              onClick={onClose} 
+              className={`p-1.5 rounded-lg transition-colors ${
+                darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-50 text-gray-400'
+              }`}
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* List Area */}
