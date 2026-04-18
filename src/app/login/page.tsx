@@ -45,8 +45,9 @@ export default function LoginPage() {
       login({
         name: mode === 'register' ? form.name : form.email.split('@')[0],
         email: form.email,
+        isAdmin: form.email === 'admin@simba.com',
       });
-      router.push('/');
+      router.push(form.email === 'admin@simba.com' ? '/admin' : '/');
     }, 1200);
   };
 

@@ -175,6 +175,14 @@ export default function Navbar({ onCartOpen, searchQuery, onSearchChange }: Navb
                     <p className="text-xs font-bold dark:text-white">{user.name}</p>
                     <p className="text-[10px] text-gray-500 truncate">{user.email}</p>
                   </div>
+                  {user.isAdmin && (
+                    <Link href="/admin" onClick={() => setUserMenuOpen(false)}>
+                      <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] font-bold text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-colors">
+                        <LayoutGrid className="w-3.5 h-3.5" />
+                        ADMIN PANEL
+                      </button>
+                    </Link>
+                  )}
                   <button
                     onClick={() => { logout(); setUserMenuOpen(false); }}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"

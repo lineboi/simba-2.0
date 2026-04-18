@@ -1,11 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { CartItem, Product, Language } from './types';
-
-interface User {
-  name: string;
-  email: string;
-}
+import { CartItem, Product, Language, User } from './types';
 
 interface AppState {
   cart: CartItem[];
