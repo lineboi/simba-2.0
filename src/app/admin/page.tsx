@@ -242,9 +242,11 @@ export default function AdminDashboard() {
                  ))}
               </div>
               <div className="mt-auto p-6 pt-0">
-                 <button className={`w-full py-3 rounded-xl border-2 border-dashed text-xs font-bold uppercase tracking-widest transition-all ${darkMode ? 'border-gray-800 text-gray-500 hover:border-gray-700 hover:text-gray-400' : 'border-gray-100 text-gray-400 hover:border-gray-200 hover:text-gray-500'}`}>
-                    View Full Reports
-                 </button>
+                 <Link href="/admin/orders">
+                    <button className={`w-full py-3 rounded-xl border-2 border-dashed text-xs font-bold uppercase tracking-widest transition-all ${darkMode ? 'border-gray-800 text-gray-500 hover:border-gray-700 hover:text-gray-400' : 'border-gray-100 text-gray-400 hover:border-gray-200 hover:text-gray-500'}`}>
+                        View Full Reports
+                    </button>
+                 </Link>
               </div>
             </div>
           </div>
