@@ -9,7 +9,6 @@ import ProductCard from '@/components/ProductCard';
 import CartDrawer from '@/components/CartDrawer';
 import CategoryFilter from '@/components/CategoryFilter';
 import Hero from '@/components/Hero';
-import { hasSpecificImage } from '@/lib/productImages';
 import { ArrowUpDown } from 'lucide-react';
 
 export default function Home() {
@@ -25,18 +24,13 @@ export default function Home() {
     fetch('/simba_products.json').then((r) => r.json()).then(setData);
   }, []);
 
-  // Only show products that have a specific keyword-matched image
-  const visibleProducts = useMemo(() => {
+  const categories = useMemo(() => {
     if (!data) return [];
-    return data.products.filter((p) => hasSpecificImage(p.name));
+    return [...new Set(data.products.map((p) => p.category))].sort();
   }, [data]);
 
-  const categories = useMemo(() => {
-    return [...new Set(visibleProducts.map((p) => p.category))].sort();
-  }, [visibleProducts]);
-
   const filtered = useMemo(() => {
-    let products = visibleProducts;
+    let products = data?.products ?? [];
     if (category) products = products.filter((p) => p.category === category);
     if (search) {
       const q = search.toLowerCase();
@@ -46,7 +40,7 @@ export default function Home() {
     else if (sort === 'price-desc') products = [...products].sort((a, b) => b.price - a.price);
     else if (sort === 'name-az') products = [...products].sort((a, b) => a.name.localeCompare(b.name));
     return products;
-  }, [visibleProducts, category, search, sort]);
+  }, [data, category, search, sort]);
 
   const scrollToProducts = () => {
     productsRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -59,8 +53,11 @@ export default function Home() {
     'Alcoholic Drinks': '🍺',
     'Baby Products': '👶',
     'Kitchenware & Electronics': '🍳',
+    'Kitchen Storage': '🫙',
     'Sports & Fitness': '💪',
+    'Sports & Wellness': '🏃',
     'Stationery': '📚',
+    'Pet Care': '🐾',
     'General': '🛒',
   };
 

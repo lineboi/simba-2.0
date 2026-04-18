@@ -7,7 +7,6 @@ import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getProductImage } from '@/lib/productImages';
 import { ArrowLeft, CheckCircle, Smartphone, Banknote, Loader2, ShoppingBag } from 'lucide-react';
 
 type Step = 'details' | 'payment' | 'processing' | 'success';
@@ -301,7 +300,7 @@ export default function CheckoutPage() {
                 {cart.map((item) => (
                   <div key={item.product.id} className="flex gap-3 items-center">
                     <div className={`relative w-12 h-12 rounded-xl overflow-hidden ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} shrink-0`}>
-                      <Image src={getProductImage(item.product.name, item.product.category)} alt={item.product.name} fill className="object-cover rounded-xl" unoptimized />
+                      <Image src={item.product.image} alt={item.product.name} fill className="object-contain p-1 rounded-xl" unoptimized />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={`text-xs font-medium line-clamp-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>

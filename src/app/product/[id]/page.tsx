@@ -8,7 +8,6 @@ import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import ProductCard from '@/components/ProductCard';
 import { ArrowLeft, ShoppingCart, Check, Package, Tag, Hash } from 'lucide-react';
-import { getProductImage } from '@/lib/productImages';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -75,10 +74,10 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             {/* Image */}
             <div className={`relative h-72 md:h-auto min-h-80 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-center p-8`}>
               <Image
-                src={getProductImage(product.name, product.category)}
+                src={product.image}
                 alt={product.name}
                 fill
-                className="object-cover"
+                className="object-contain p-6"
                 sizes="(max-width: 768px) 100vw, 50vw"
                 unoptimized
               />
