@@ -154,6 +154,14 @@ export default function AdminProducts() {
             <Package className="w-5 h-5" />
             Products
           </Link>
+          <Link href="/admin/orders" className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'}`}>
+            <ShoppingCart className="w-5 h-5" />
+            Orders
+          </Link>
+          <Link href="/admin/users" className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'}`}>
+            <Users className="w-5 h-5" />
+            Customers
+          </Link>
         </nav>
       </aside>
 
