@@ -104,7 +104,7 @@ export default function Hero({ onShopNow }: HeroProps) {
             </div>
 
             {/* Headline */}
-            <h1 className={`text-4xl md:text-6xl font-extrabold leading-tight mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            <h1 className={`text-3xl sm:text-4xl md:text-6xl font-extrabold leading-tight mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
               {current.headline.map((line, i) => (
                 <span
                   key={i}
@@ -116,25 +116,25 @@ export default function Hero({ onShopNow }: HeroProps) {
               ))}
             </h1>
 
-            <p className={`text-base md:text-lg mb-7 animate-fade-in delay-300 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            <p className={`text-sm sm:text-base md:text-lg mb-7 animate-fade-in delay-300 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               {current.sub}
             </p>
 
-            <div className="flex flex-wrap gap-3 animate-slide-up delay-400" style={{ animationFillMode: 'forwards' }}>
+            <div className="flex flex-col sm:flex-row gap-3 animate-slide-up delay-400" style={{ animationFillMode: 'forwards' }}>
               <button
                 onClick={onShopNow}
-                className="shimmer-btn inline-flex items-center gap-2 text-white font-bold px-7 py-3.5 rounded-2xl shadow-lg shadow-orange-500/30 hover:scale-105 transition-transform"
+                className="shimmer-btn inline-flex items-center justify-center gap-2 text-white font-bold px-7 py-3.5 rounded-2xl shadow-lg shadow-orange-500/30 hover:scale-105 transition-transform"
               >
                 {t(language, 'shopNow')}
                 <ArrowRight className="w-4 h-4" />
               </button>
               <button
                 onClick={onShopNow}
-                className={`inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl font-semibold border-2 transition hover:scale-105 ${
+                className={`inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-semibold border-2 transition hover:scale-105 ${
                   darkMode ? 'border-gray-600 text-gray-300 hover:border-orange-500' : 'border-gray-200 text-gray-700 hover:border-orange-400'
                 }`}
               >
-                View All Products
+                View Products
               </button>
             </div>
 
@@ -195,7 +195,7 @@ export default function Hero({ onShopNow }: HeroProps) {
       </div>
 
       {/* Stats bar */}
-      <div className={`grid grid-cols-4 gap-3`}>
+      <div className={`grid grid-cols-2 sm:grid-cols-4 gap-3`}>
         {STATS.map((stat, i) => (
           <div
             key={stat.label}

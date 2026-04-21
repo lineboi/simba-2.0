@@ -121,29 +121,32 @@ export default function Home() {
         </div>
 
         {/* CATEGORIES */}
-        <section ref={catRef}>
-          <div className="flex items-center gap-2 mb-5">
-            <Sparkles className="w-5 h-5 text-orange-500" />
-            <h2 className={`text-xl font-extrabold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{t(language, 'shopByCategory')}</h2>
+        <section id="categories" ref={catRef} className="scroll-mt-20">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-orange-500" />
+              <h2 className={`text-xl font-extrabold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{t(language, 'shopByCategory')}</h2>
+            </div>
+            <p className="text-[10px] font-bold text-orange-500 uppercase tracking-widest lg:hidden">Swipe →</p>
           </div>
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-12 gap-2">
+          <div className="flex lg:grid lg:grid-cols-12 gap-3 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0 scrollbar-hide -mx-4 px-4 lg:mx-0 lg:px-0">
             {categories.map((cat, i) => {
               const meta = CATEGORY_META[cat] ?? { emoji: '🛒', color: 'from-gray-400 to-slate-500' };
               return (
                 <button
                   key={cat}
                   onClick={() => { setCategory(cat); scrollToProducts(); }}
-                  className={`group flex flex-col items-center gap-1.5 p-2.5 rounded-2xl transition-all duration-300 ${catVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'} ${
+                  className={`group flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all duration-300 shrink-0 lg:shrink min-w-[90px] lg:min-w-0 ${catVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'} ${
                     category === cat
                       ? `bg-gradient-to-br ${meta.color} shadow-lg scale-105`
                       : darkMode ? 'bg-gray-800 hover:bg-gray-700 hover:scale-105' : 'bg-white hover:shadow-md hover:scale-105 border border-gray-100'
                   }`}
                   style={{ transitionDelay: `${i * 40}ms` }}
                 >
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg transition-transform group-hover:scale-110 ${category === cat ? 'bg-white/20' : darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl transition-transform group-hover:scale-110 ${category === cat ? 'bg-white/20' : darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                     {meta.emoji}
                   </div>
-                  <span className={`text-[10px] text-center font-semibold leading-tight ${category === cat ? 'text-white' : darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  <span className={`text-xs text-center font-bold leading-tight ${category === cat ? 'text-white' : darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                     {cat.split(' ')[0]}
                   </span>
                 </button>
@@ -192,7 +195,7 @@ export default function Home() {
 
             {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-3 mb-4">
-              <div className="flex-1 overflow-x-auto scrollbar-hide">
+              <div className="flex-1 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
                 <CategoryFilter categories={categories} selected={category} onSelect={setCategory} />
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -200,7 +203,7 @@ export default function Home() {
                 <select
                   value={sort}
                   onChange={(e) => setSort(e.target.value)}
-                  className={`text-sm px-3 py-2 rounded-xl border outline-none ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-700'}`}
+                  className={`flex-1 sm:flex-none text-sm px-3 py-2 rounded-xl border outline-none ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-700'}`}
                 >
                   <option value="">{t(language, 'sortBy')}</option>
                   <option value="price-asc">{t(language, 'priceAsc')}</option>
@@ -235,9 +238,9 @@ export default function Home() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-4 justify-items-center sm:justify-items-stretch">
                   {visible.map((product, i) => (
-                    <div key={product.id} className="animate-slide-up opacity-0" style={{ animationDelay: `${Math.min(i, 15) * 0.04}s`, animationFillMode: 'forwards' }}>
+                    <div key={product.id} className="w-full animate-slide-up opacity-0" style={{ animationDelay: `${Math.min(i, 15) * 0.04}s`, animationFillMode: 'forwards' }}>
                       <ProductCard product={product} />
                     </div>
                   ))}

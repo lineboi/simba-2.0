@@ -13,6 +13,8 @@ export const metadata: Metadata = {
   },
 };
 
+import BottomNav from "@/components/BottomNav";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -20,8 +22,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
-      <body className={`${inter.className} min-h-full flex flex-col antialiased`}>
+      <body className={`${inter.className} min-h-full flex flex-col antialiased pb-16 lg:pb-0`}>
         {children}
+        <BottomNav />
       </body>
     </html>
   );

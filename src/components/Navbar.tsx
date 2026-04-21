@@ -174,6 +174,22 @@ export default function Navbar({ onCartOpen, searchQuery, onSearchChange }: Navb
                     <p className="text-xs font-bold dark:text-white">{user.name}</p>
                     <p className="text-[10px] text-gray-500 truncate">{user.email}</p>
                   </div>
+                  <div className="lg:hidden border-b dark:border-gray-800 mb-1">
+                    <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Language</div>
+                    <div className="grid grid-cols-3 gap-1 p-1">
+                      {LANGS.map((l) => (
+                        <button
+                          key={l.code}
+                          onClick={() => { setLanguage(l.code); setUserMenuOpen(false); }}
+                          className={`text-[10px] py-1 rounded-md font-bold transition-all ${
+                            language === l.code ? 'bg-orange-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+                          }`}
+                        >
+                          {l.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   {user.isAdmin && (
                     <Link href="/admin" onClick={() => setUserMenuOpen(false)}>
                       <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] font-bold text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-colors">
@@ -194,10 +210,10 @@ export default function Navbar({ onCartOpen, searchQuery, onSearchChange }: Navb
             )}
           </div>
 
-          {/* Cart */}
+          {/* Cart - Hidden on mobile, moved to BottomNav */}
           <button
             onClick={onCartOpen}
-            className="relative p-2 rounded-xl bg-gray-900 dark:bg-orange-500 text-white hover:scale-105 active:scale-95 transition-all shadow-lg shadow-gray-950/10 dark:shadow-orange-500/20"
+            className="hidden lg:relative lg:p-2 lg:rounded-xl lg:bg-gray-900 lg:dark:bg-orange-500 lg:text-white lg:hover:scale-105 lg:active:scale-95 lg:transition-all lg:shadow-lg lg:shadow-gray-950/10 lg:dark:shadow-orange-500/20"
           >
             <ShoppingCart className="w-5 h-5" />
             {count > 0 && (
