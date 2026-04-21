@@ -35,7 +35,7 @@ export default function AdminDashboard() {
       router.push('/login');
       return;
     }
-    fetch('/simba_products.json')
+    fetch('/api/products')
       .then(r => r.json())
       .then(d => {
         setData(d);

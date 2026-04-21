@@ -56,7 +56,7 @@ export default function Navbar({ onCartOpen, searchQuery, onSearchChange }: Navb
   const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
-    fetch('/simba_products.json')
+    fetch('/api/products')
       .then(r => r.json())
       .then(data => {
         const cats = [...new Set(data.products.map((p: any) => p.category))].sort() as string[];

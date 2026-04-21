@@ -24,7 +24,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const router = useRouter();
 
   useEffect(() => {
-    fetch('/simba_products.json')
+    fetch('/api/products')
       .then((r) => r.json())
       .then((d: ProductsData) => {
         setData(d);

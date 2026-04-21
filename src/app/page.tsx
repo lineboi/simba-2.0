@@ -45,7 +45,7 @@ export default function Home() {
   const catRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch('/simba_products.json').then((r) => r.json()).then(setData);
+    fetch('/api/products').then((r) => r.json()).then(setData);
   }, []);
 
   useEffect(() => {
