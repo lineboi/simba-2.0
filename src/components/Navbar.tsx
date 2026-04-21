@@ -12,28 +12,14 @@ import {
   LayoutGrid,
   ChevronRight,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Menu
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { t } from '@/lib/translations';
-import { Language } from '@/lib/types';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-
-const CATEGORY_META: Record<string, { emoji: string; color: string; desc: string }> = {
-  'Food Products':             { emoji: '🥬', color: 'from-green-50 to-emerald-50 text-green-600', desc: 'Fresh groceries & daily essentials' },
-  'Cosmetics & Personal Care': { emoji: '🧴', color: 'from-pink-50 to-rose-50 text-pink-600', desc: 'Beauty & skin care products' },
-  'Cleaning & Sanitary':       { emoji: '🧹', color: 'from-blue-50 to-cyan-50 text-blue-600', desc: 'Keep your home sparkling clean' },
-  'Alcoholic Drinks':          { emoji: '🍺', color: 'from-amber-50 to-yellow-50 text-amber-600', desc: 'Premium beers, wines & spirits' },
-  'Baby Products':             { emoji: '👶', color: 'from-yellow-50 to-orange-50 text-orange-600', desc: 'Everything for your little ones' },
-  'Kitchenware & Electronics': { emoji: '🍳', color: 'from-slate-50 to-gray-50 text-slate-600', desc: 'Modern tools for your kitchen' },
-  'Kitchen Storage':           { emoji: '🫙', color: 'from-orange-50 to-amber-50 text-orange-600', desc: 'Organize your space elegantly' },
-  'Sports & Fitness':          { emoji: '💪', color: 'from-red-50 to-orange-50 text-red-600', desc: 'Equipment for active lifestyle' },
-  'Sports & Wellness':         { emoji: '🏃', color: 'from-teal-50 to-cyan-50 text-teal-600', desc: 'Health & wellness supplements' },
-  'Stationery':                { emoji: '📚', color: 'from-indigo-50 to-purple-50 text-indigo-600', desc: 'Office & school supplies' },
-  'Pet Care':                  { emoji: '🐾', color: 'from-orange-50 to-red-50 text-orange-600', desc: 'Only the best for your pets' },
-  'General':                   { emoji: '🛒', color: 'from-gray-50 to-slate-50 text-slate-600', desc: 'Variety of household items' },
-};
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface NavbarProps {
   onCartOpen: () => void;
@@ -41,284 +27,305 @@ interface NavbarProps {
   onSearchChange: (q: string) => void;
 }
 
-const LANGS: { code: Language; label: string }[] = [
+const LANGS = [
   { code: 'en', label: 'EN' },
   { code: 'fr', label: 'FR' },
   { code: 'rw', label: 'RW' },
-];
+] as const;
 
 export default function Navbar({ onCartOpen, searchQuery, onSearchChange }: NavbarProps) {
-  const { darkMode, toggleDarkMode, language, setLanguage, cartCount, user, logout } = useStore();
-  const count = cartCount();
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const { darkMode, toggleDarkMode, language, setLanguage, user, logout, cartCount } = useStore();
+  const [scrolled, setScrolled] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [catModalOpen, setCatModalOpen] = useState(false);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const count = cartCount();
 
   useEffect(() => {
-    fetch('/api/categories')
-      .then(r => r.json())
-      .then(data => {
-        setCategories(data.map((c: any) => c.name));
-      });
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  useEffect(() => {
-    if (catModalOpen) document.body.style.overflow = 'hidden';
-    else document.body.style.overflow = 'unset';
-  }, [catModalOpen]);
-
   return (
-    <nav className={`sticky top-0 z-50 ${darkMode ? 'bg-gray-950/80 border-gray-800' : 'bg-white/80 border-gray-200'} border-b backdrop-blur-md transition-all duration-300`}>
-      <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center gap-4">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 shrink-0">
-          <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center shadow-lg shadow-orange-500/20">
-            <span className="text-white font-bold text-lg">S</span>
-          </div>
-          <div className="hidden sm:block">
-            <div className={`font-bold text-base leading-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>Simba</div>
-            <div className="text-[10px] text-orange-500 font-bold uppercase tracking-tighter leading-tight">Supermarket</div>
-          </div>
-        </Link>
-
-        {/* Categories Trigger */}
-        <button
-          onClick={() => setCatModalOpen(true)}
-          className={`hidden md:flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
-            darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-900' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
-          }`}
-        >
-          <LayoutGrid className="w-4 h-4" />
-          Categories
-        </button>
-
-        {/* Search */}
-        <div className="hidden md:flex flex-1 max-w-lg mx-4">
-          <div className="relative w-full group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-orange-500 transition-colors" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search everything..."
-              className={`w-full pl-10 pr-4 py-2 rounded-xl border text-sm outline-none transition-all ${
-                darkMode
-                  ? 'bg-gray-900 border-gray-800 text-white placeholder-gray-600 focus:border-orange-500/50 focus:bg-gray-950'
-                  : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-orange-500/30 focus:bg-white focus:shadow-sm'
-              }`}
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 ml-auto">
-          {/* Mobile search toggle */}
-          <button
-            onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
-            className={`md:hidden p-2 rounded-lg transition-colors ${darkMode ? 'text-gray-400 hover:bg-gray-900' : 'text-gray-500 hover:bg-gray-50'}`}
-          >
-            {mobileSearchOpen ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
-          </button>
-
-          {/* Language */}
-          <div className="hidden lg:flex items-center border dark:border-gray-800 rounded-lg p-0.5">
-            {LANGS.map((l) => (
-              <button
-                key={l.code}
-                onClick={() => setLanguage(l.code)}
-                className={`text-[10px] px-2 py-1 rounded-md font-bold transition-all ${
-                  language === l.code
-                    ? 'bg-orange-500 text-white shadow-sm'
-                    : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200'
-                }`}
-              >
-                {l.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Dark mode */}
-          <button
-            onClick={toggleDarkMode}
-            className={`p-2 rounded-lg transition-colors ${darkMode ? 'text-yellow-400 hover:bg-gray-900' : 'text-gray-500 hover:bg-gray-50'}`}
-          >
-            {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
-
-          <div className="w-px h-6 bg-gray-200 dark:bg-gray-800 mx-1 hidden sm:block" />
-
-          {/* User */}
-          <div className="relative">
-            {user ? (
-              <button
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-2 p-1 pr-2 rounded-full border border-transparent hover:border-gray-200 dark:hover:border-gray-800 transition-all"
-              >
-                <div className="w-7 h-7 bg-orange-500 rounded-full flex items-center justify-center shadow-sm">
-                  <span className="text-white text-xs font-bold">{user.name[0].toUpperCase()}</span>
-                </div>
-                <span className="text-xs font-bold hidden sm:block dark:text-gray-200">{user.name.split(' ')[0]}</span>
-              </button>
-            ) : (
-              <Link href="/login" className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}>
-                <User className="w-4 h-4" />
-                <span className="hidden sm:block uppercase tracking-wider">Sign in</span>
-              </Link>
-            )}
-
-            {userMenuOpen && user && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-                <div className={`absolute right-0 top-12 z-50 w-48 rounded-xl shadow-xl border p-1 animate-slide-up ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
-                  <div className="px-3 py-2 mb-1 border-b dark:border-gray-800">
-                    <p className="text-xs font-bold dark:text-white">{user.name}</p>
-                    <p className="text-[10px] text-gray-500 truncate">{user.email}</p>
-                  </div>
-                  <div className="lg:hidden border-b dark:border-gray-800 mb-1">
-                    <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Language</div>
-                    <div className="grid grid-cols-3 gap-1 p-1">
-                      {LANGS.map((l) => (
-                        <button
-                          key={l.code}
-                          onClick={() => { setLanguage(l.code); setUserMenuOpen(false); }}
-                          className={`text-[10px] py-1 rounded-md font-bold transition-all ${
-                            language === l.code ? 'bg-orange-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
-                          }`}
-                        >
-                          {l.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  {user.isAdmin && (
-                    <Link href="/admin" onClick={() => setUserMenuOpen(false)}>
-                      <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] font-bold text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-colors">
-                        <LayoutGrid className="w-3.5 h-3.5" />
-                        ADMIN PANEL
-                      </button>
-                    </Link>
-                  )}
-                  <button
-                    onClick={() => { logout(); setUserMenuOpen(false); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    SIGN OUT
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Cart - Hidden on mobile, moved to BottomNav */}
-          <button
-            onClick={onCartOpen}
-            className="hidden lg:relative lg:p-2 lg:rounded-xl lg:bg-gray-900 lg:dark:bg-orange-500 lg:text-white lg:hover:scale-105 lg:active:scale-95 lg:transition-all lg:shadow-lg lg:shadow-gray-950/10 lg:dark:shadow-orange-500/20"
-          >
-            <ShoppingCart className="w-5 h-5" />
-            {count > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 dark:bg-white text-white dark:text-orange-600 rounded-full text-[9px] flex items-center justify-center font-bold">
-                {count}
-              </span>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile search bar */}
-      {mobileSearchOpen && (
-        <div className={`md:hidden px-4 pb-4 animate-slide-up ${darkMode ? 'bg-gray-950' : 'bg-white'}`}>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              autoFocus
-              type="text"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search products..."
-              className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none ${
-                darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
-              }`}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* CATEGORY MODAL */}
-      {catModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div 
-            className="absolute inset-0 bg-gray-950/30 backdrop-blur-sm animate-fade-in" 
-            onClick={() => setCatModalOpen(false)} 
-          />
+    <>
+      <nav className={`sticky top-0 z-[80] transition-all duration-500 ${
+        scrolled 
+          ? 'py-3 bg-white/80 dark:bg-slate-950/80 backdrop-blur-2xl shadow-[0_10px_40px_rgba(0,0,0,0.05)] border-b border-slate-100 dark:border-slate-900' 
+          : 'py-6 bg-transparent'
+      }`}>
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between gap-8">
           
-          <div className={`relative w-full max-w-3xl max-h-[80vh] overflow-hidden rounded-2xl shadow-2xl border animate-slide-up flex flex-col ${
-            darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'
-          }`}>
-            {/* Modal Header */}
-            <div className={`px-8 py-6 flex items-center justify-between border-b ${darkMode ? 'border-gray-800' : 'border-gray-100'}`}>
-              <div>
-                <h2 className={`text-xl font-bold tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>Shop by Category</h2>
-                <p className={`text-xs mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Find exactly what you need from our sorted collections.</p>
+          {/* LOGO */}
+          <Link href="/" className="flex items-center gap-3 shrink-0 group">
+            <div className="relative">
+              <motion.div 
+                whileHover={{ rotate: 180 }}
+                className="w-10 h-10 bg-slate-950 dark:bg-orange-600 rounded-2xl flex items-center justify-center shadow-2xl transition-transform"
+              >
+                <span className="text-white font-black text-xl">S</span>
+              </motion.div>
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border-2 border-white dark:border-slate-950" />
+            </div>
+            <div className="hidden sm:block">
+              <h1 className="text-xl font-black tracking-tighter leading-none dark:text-white">SIMBA</h1>
+              <p className="text-[10px] font-bold text-orange-600 uppercase tracking-[0.2em] mt-0.5">Online</p>
+            </div>
+          </Link>
+
+          {/* SEARCH BAR (CENTER) - DESKTOP */}
+          <div className="flex-1 max-w-2xl relative hidden md:block">
+            <div className="relative group">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-orange-600 transition-colors" />
+              <input
+                type="text"
+                placeholder={t(language, 'search')}
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className={`w-full pl-12 pr-6 py-4 rounded-[2rem] text-sm font-medium outline-none transition-all border ${
+                  darkMode 
+                    ? 'bg-slate-900/50 border-slate-800 focus:bg-slate-900 focus:border-orange-500/50' 
+                    : 'bg-slate-50 border-slate-100 focus:bg-white focus:border-orange-200 shadow-inner'
+                }`}
+              />
+              <kbd className="absolute right-5 top-1/2 -translate-y-1/2 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-[10px] font-black text-slate-400 hidden lg:block">
+                /
+              </kbd>
+            </div>
+          </div>
+
+          {/* ACTIONS (RIGHT) */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            
+            {/* Dark Mode Toggle */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => toggleDarkMode()}
+              className={`p-3 rounded-2xl border transition-all ${
+                darkMode 
+                  ? 'bg-slate-900 border-slate-800 text-amber-400 hover:border-slate-700' 
+                  : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:shadow-lg'
+              }`}
+            >
+              {darkMode ? <Sun className="w-5 h-5 fill-current" /> : <Moon className="w-5 h-5" />}
+            </motion.button>
+
+            {/* Language (Desktop) */}
+            <div className="hidden lg:flex items-center bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-1">
+              {LANGS.map((l) => (
+                <button
+                  key={l.code}
+                  onClick={() => setLanguage(l.code)}
+                  className={`px-3 py-2 rounded-xl text-[10px] font-black transition-all ${
+                    language === l.code 
+                      ? 'bg-white dark:bg-slate-800 shadow-sm text-orange-600' 
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  {l.label}
+                </button>
+              ))}
+            </div>
+
+            {/* User Account */}
+            <div className="relative">
+              {user ? (
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className={`flex items-center gap-2 p-1.5 pr-4 rounded-full border transition-all ${
+                    darkMode 
+                      ? 'bg-slate-900 border-slate-800 hover:border-slate-700' 
+                      : 'bg-white border-slate-100 hover:shadow-lg'
+                  }`}
+                >
+                  <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-amber-500 rounded-full flex items-center justify-center shadow-lg shadow-orange-500/20">
+                    <span className="text-white text-xs font-black">{user.name[0].toUpperCase()}</span>
+                  </div>
+                  <span className="text-[11px] font-black hidden sm:block uppercase tracking-wider">{user.name.split(' ')[0]}</span>
+                </button>
+              ) : (
+                <Link href="/login" className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-[0.1em] transition-all bg-slate-950 text-white dark:bg-white dark:text-slate-950 hover:scale-105 active:scale-95 shadow-xl`}>
+                  <User className="w-4 h-4" />
+                  Sign In
+                </Link>
+              )}
+
+              <AnimatePresence>
+                {userMenuOpen && user && (
+                  <>
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 z-[90]" 
+                      onClick={() => setUserMenuOpen(false)} 
+                    />
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className={`absolute right-0 top-14 z-[100] w-64 rounded-3xl shadow-2xl border p-2 ${
+                        darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
+                      }`}
+                    >
+                      <div className="px-4 py-4 mb-2 border-b border-slate-100 dark:border-slate-800">
+                        <p className="text-xs font-black uppercase tracking-tight">{user.name}</p>
+                        <p className="text-[10px] text-slate-500 font-medium truncate">{user.email}</p>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        {user.isAdmin && (
+                          <Link href="/admin" onClick={() => setUserMenuOpen(false)}>
+                            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-colors uppercase tracking-widest">
+                              <LayoutGrid className="w-4 h-4" />
+                              Admin Panel
+                            </button>
+                          </Link>
+                        )}
+                        <button
+                          onClick={() => { logout(); setUserMenuOpen(false); }}
+                          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors uppercase tracking-widest"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Sign Out
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Desktop Cart Button */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onCartOpen}
+              className="relative p-4 rounded-2xl bg-orange-600 text-white shadow-xl shadow-orange-600/20 hidden md:block group overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+              <ShoppingCart className="w-5 h-5 relative z-10" />
+              {count > 0 && (
+                <motion.span 
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-1 -right-1 w-6 h-6 bg-slate-950 text-white rounded-full text-[10px] flex items-center justify-center font-black border-2 border-white dark:border-slate-950"
+                >
+                  {count}
+                </motion.span>
+              )}
+            </motion.button>
+
+            {/* Mobile Search Toggle */}
+            <button 
+              onClick={() => setMobileSearchOpen(true)}
+              className="p-3 md:hidden rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 transition-colors active:bg-orange-500 active:text-white"
+            >
+               <Search className="w-5 h-5 text-slate-400" />
+            </button>
+
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile Search Overlay */}
+      <AnimatePresence>
+        {mobileSearchOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`fixed inset-0 z-[110] p-4 flex flex-col md:hidden ${
+              darkMode ? 'bg-slate-950/95' : 'bg-white/95'
+            } backdrop-blur-xl`}
+          >
+            <div className="flex items-center gap-4 mb-8">
+              <div className="flex-1 relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-600" />
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder={t(language, 'search')}
+                  value={searchQuery}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  className={`w-full pl-11 pr-4 py-4 rounded-2xl text-sm font-bold outline-none border-2 transition-all ${
+                    darkMode 
+                      ? 'bg-slate-900 border-slate-800 focus:border-orange-500' 
+                      : 'bg-slate-50 border-slate-100 focus:border-orange-500 shadow-inner'
+                  }`}
+                />
               </div>
               <button 
-                onClick={() => setCatModalOpen(false)}
-                className={`p-2 rounded-xl transition-colors ${darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-50 text-gray-400'}`}
+                onClick={() => {
+                  setMobileSearchOpen(false);
+                  onSearchChange('');
+                }}
+                className={`p-4 rounded-2xl ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Modal Content */}
-            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {categories.map((cat, i) => {
-                  const meta = CATEGORY_META[cat] || { emoji: '🛒', color: 'from-gray-50 to-slate-50 text-slate-600', desc: 'Browse our collection' };
-                  return (
-                    <button
-                      key={cat}
-                      onClick={() => {
-                        setCatModalOpen(false);
-                      }}
-                      className={`group p-4 rounded-xl border text-left transition-all duration-200 flex items-center gap-4 ${
-                        darkMode ? 'bg-gray-800/20 border-gray-800 hover:border-orange-500/50 hover:bg-gray-800/40' : 'bg-gray-50 border-gray-100 hover:border-orange-500/30 hover:bg-white hover:shadow-sm'
-                      }`}
-                    >
-                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${meta.color} flex items-center justify-center text-2xl shrink-0 shadow-sm transition-transform group-hover:scale-110`}>
-                        {meta.emoji}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className={`font-bold text-sm mb-0.5 ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{cat}</h3>
-                        <p className="text-[10px] text-gray-500 line-clamp-1">{meta.desc}</p>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-orange-500 transition-colors" />
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="flex-1 overflow-y-auto">
+               <div className="space-y-6">
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Popular Searches</p>
+                    <div className="flex flex-wrap gap-2">
+                      {['Milk', 'Fruits', 'Drinks', 'Soap', 'Diapers'].map(tag => (
+                        <button 
+                          key={tag}
+                          onClick={() => {
+                            onSearchChange(tag);
+                            setMobileSearchOpen(false);
+                          }}
+                          className={`px-4 py-2 rounded-xl text-xs font-bold border ${
+                            darkMode ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-100'
+                          }`}
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Quick Links</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button 
+                        onClick={() => {
+                          setMobileSearchOpen(false);
+                          const el = document.getElementById('categories');
+                          el?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className={`flex items-center gap-3 p-4 rounded-2xl border ${
+                          darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
+                        }`}
+                      >
+                        <LayoutGrid className="w-4 h-4 text-orange-600" />
+                        <span className="text-xs font-bold">Categories</span>
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setMobileSearchOpen(false);
+                          onCartOpen();
+                        }}
+                        className={`flex items-center gap-3 p-4 rounded-2xl border ${
+                          darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
+                        }`}
+                      >
+                        <ShoppingCart className="w-4 h-4 text-orange-600" />
+                        <span className="text-xs font-bold">My Cart</span>
+                      </button>
+                    </div>
+                  </div>
+               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className={`px-8 py-4 bg-gray-50 dark:bg-gray-800/30 flex items-center justify-between`}>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400">
-                Simba Supermarket · Rwanda
-              </p>
-              <div className="flex items-center gap-2">
-                 <span className="text-[9px] font-bold text-gray-400">Trusted by 10k+ customers</span>
-              </div>
+            <div className="py-8 text-center">
+               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Simba Online Experience</p>
             </div>
-          </div>
-        </div>
-      )}
-
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { 
-          background: ${darkMode ? '#374151' : '#E5E7EB'}; 
-          border-radius: 10px; 
-        }
-      `}</style>
-    </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

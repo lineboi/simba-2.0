@@ -1,12 +1,13 @@
 'use client';
 
-import { ShoppingCart, Check, Star } from 'lucide-react';
+import { ShoppingCart, Check, Star, Heart } from 'lucide-react';
 import { Product } from '@/lib/types';
 import { useStore } from '@/lib/store';
 import { t } from '@/lib/translations';
 import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface ProductCardProps {
   product: Product;
@@ -15,16 +16,12 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const { addToCart, darkMode, language } = useStore();
   const [added, setAdded] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Generate a stable random rating for demo purposes
   const rating = useMemo(() => {
     const hash = product.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return (hash % 2) + 4; // 4 or 5 stars
-  }, [product.name]);
-
-  const reviewCount = useMemo(() => {
-    const hash = product.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return (hash % 50) + 5;
   }, [product.name]);
 
   const handleAdd = (e: React.MouseEvent) => {
@@ -38,76 +35,155 @@ export default function ProductCard({ product }: ProductCardProps) {
   const formattedPrice = new Intl.NumberFormat('en-RW').format(product.price);
 
   return (
-    <Link href={`/product/${product.id}`}>
-      <div className={`group rounded-2xl overflow-hidden border transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-        {/* Image */}
-        <div className="relative h-40 sm:h-44 bg-gray-50 overflow-hidden">
-          <Image
-            src={product.image}
-            alt={product.name}
-            fill
-            className="object-contain p-3 group-hover:scale-105 transition-transform duration-300"
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            unoptimized
-          />
-          {!product.inStock && (
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-              <span className="bg-red-500 text-white text-[10px] font-black uppercase px-2 py-1 rounded-lg tracking-wider">
-                {t(language, 'outOfStock')}
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -8 }}
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
+      className="w-full"
+    >
+      <Link href={`/product/${product.id}`}>
+        <div className={`relative group rounded-[2rem] overflow-hidden border transition-all duration-500 ${
+          darkMode 
+            ? 'bg-slate-900 border-slate-800 hover:border-orange-500/50 shadow-[0_0_20px_rgba(0,0,0,0.3)]' 
+            : 'bg-white border-slate-100 hover:border-orange-200 shadow-[0_10px_30px_rgba(0,0,0,0.04)]'
+        }`}>
+          {/* Top Badges */}
+          <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+            {!product.inStock && (
+              <span className="bg-red-500 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full shadow-lg">
+                Sold Out
               </span>
-            </div>
-          )}
-          {product.inStock && (
-            <div className="absolute top-2 right-2">
-              <span className="bg-orange-500 text-white text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md tracking-tighter">
-                {t(language, 'inStock')}
-              </span>
-            </div>
-          )}
-        </div>
+            )}
+            {product.inStock && isHovered && (
+              <motion.span 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="bg-green-500 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full shadow-lg"
+              >
+                In Stock
+              </motion.span>
+            )}
+          </div>
 
-        {/* Info */}
-        <div className="p-3 flex flex-col h-[130px] sm:h-[140px]">
-          <div className="flex items-center justify-between mb-1 gap-1">
-            <p className={`text-[9px] font-bold uppercase tracking-widest truncate ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-              {product.category.split(' ')[0]}
-            </p>
-            <div className="flex items-center gap-0.5 shrink-0">
-              <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
-              <span className={`text-[10px] font-bold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{rating}.0</span>
-            </div>
-          </div>
-          <h3 className={`font-bold text-xs sm:text-sm leading-tight mb-2 line-clamp-2 h-8 sm:h-10 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            {product.name}
-          </h3>
-          <div className="mt-auto flex items-center justify-between gap-1">
-            <div className="min-w-0">
-              <span className="text-orange-600 font-black text-sm sm:text-base truncate block">{formattedPrice}</span>
-              <span className={`text-[8px] font-bold uppercase tracking-tighter ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>RWF</span>
-            </div>
-            <button
-              onClick={handleAdd}
-              disabled={!product.inStock}
-              className={`shrink-0 w-8 h-8 sm:w-auto sm:px-3 sm:py-1.5 rounded-xl flex items-center justify-center transition-all ${
-                added
-                  ? 'bg-orange-500 text-white'
-                  : product.inStock
-                  ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-sm'
-                  : 'bg-gray-100 text-gray-300 cursor-not-allowed'
-              }`}
+          <button className="absolute top-4 right-4 z-10 p-2.5 rounded-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-md text-slate-400 hover:text-rose-500 transition-colors shadow-sm">
+            <Heart className="w-4 h-4" />
+          </button>
+
+          {/* Image Container */}
+          <div className={`relative h-48 sm:h-56 overflow-hidden flex items-center justify-center p-6 ${
+            darkMode ? 'bg-slate-800/50' : 'bg-slate-50/50'
+          }`}>
+            <motion.div
+              animate={{ scale: isHovered ? 1.1 : 1 }}
+              transition={{ duration: 0.4 }}
+              className="relative w-full h-full"
             >
-              {added ? (
-                <Check className="w-4 h-4" />
-              ) : (
-                <>
-                  <ShoppingCart className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1 text-xs font-bold uppercase tracking-tighter">Add</span>
-                </>
+              <Image
+                src={product.image}
+                alt={product.name}
+                fill
+                className="object-contain"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                unoptimized
+              />
+            </motion.div>
+            
+            {/* Quick Add Overlay (Desktop) */}
+            <AnimatePresence>
+              {isHovered && product.inStock && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute inset-0 bg-orange-500/10 backdrop-blur-[2px] hidden lg:flex items-center justify-center"
+                >
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={handleAdd}
+                    className="bg-white text-orange-600 font-bold px-6 py-2.5 rounded-full shadow-xl flex items-center gap-2 hover:bg-orange-600 hover:text-white transition-colors"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    Add to Cart
+                  </motion.button>
+                </motion.div>
               )}
-            </button>
+            </AnimatePresence>
+          </div>
+
+          {/* Product Info */}
+          <div className="p-5 flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                darkMode ? 'text-slate-500' : 'text-slate-400'
+              }`}>
+                {product.category.split(' ')[0]}
+              </span>
+              <div className="flex items-center gap-1">
+                <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                <span className={`text-[11px] font-black ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                  {rating}.0
+                </span>
+              </div>
+            </div>
+
+            <h3 className={`font-bold text-sm sm:text-base leading-tight line-clamp-2 h-10 sm:h-12 mt-1 ${
+              darkMode ? 'text-white' : 'text-slate-900'
+            }`}>
+              {product.name}
+            </h3>
+
+            <div className="mt-4 flex items-center justify-between">
+              <div className="flex flex-col">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-orange-600 font-black text-lg sm:text-xl tracking-tighter">
+                    {formattedPrice}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">RWF</span>
+                </div>
+                <span className="text-[9px] font-medium text-slate-400 italic">Per {product.unit}</span>
+              </div>
+
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={handleAdd}
+                disabled={!product.inStock}
+                className={`relative overflow-hidden w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition-all ${
+                  added
+                    ? 'bg-green-500 text-white'
+                    : product.inStock
+                    ? 'bg-orange-600 text-white shadow-[0_10px_20px_rgba(234,88,12,0.3)] hover:shadow-none'
+                    : 'bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-slate-800'
+                }`}
+              >
+                <AnimatePresence mode="wait">
+                  {added ? (
+                    <motion.div
+                      key="check"
+                      initial={{ scale: 0, rotate: -45 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      exit={{ scale: 0 }}
+                    >
+                      <Check className="w-5 h-5" />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="cart"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                    >
+                      <ShoppingCart className="w-5 h-5" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.button>
+            </div>
           </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+    </motion.div>
   );
 }
