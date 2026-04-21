@@ -1,27 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { t } from '@/lib/translations';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, CheckCircle, Smartphone, Banknote, Loader2, ShoppingBag } from 'lucide-react';
 
 type Step = 'details' | 'payment' | 'processing' | 'success';
 
 export default function CheckoutPage() {
-  const { darkMode, language, cart, cartTotal, clearCart } = useStore();
+  const { darkMode, language, cart, cartTotal, clearCart, user } = useStore();
   const [cartOpen, setCartOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [step, setStep] = useState<Step>('details');
   const [paymentMethod, setPaymentMethod] = useState<'momo' | 'cod'>('momo');
-  const [form, setForm] = useState({ name: '', address: '', phone: '', momoPhone: '' });
+  const [form, setForm] = useState({ name: user?.name || '', address: '', phone: '', momoPhone: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const router = useRouter();
 
   const total = cartTotal();
   const formatted = (n: number) => new Intl.NumberFormat('en-RW').format(n);
+
+  useEffect(() => {
+    if (!user) {
+      router.push('/login');
+    }
+  }, [user, router]);
+
+  if (!user) return null;
 
   const validate = () => {
     const e: Record<string, string> = {};

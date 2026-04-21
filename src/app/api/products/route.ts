@@ -3,12 +3,17 @@ import prisma from '@/lib/db';
 
 export async function GET() {
   try {
-    const products = await prisma.product.findMany();
+    const productsFromDb = await prisma.product.findMany({
+      include: {
+        category: true
+      }
+    });
     
-    // Structure it to match what the frontend expects (ProductsData)
-    // The frontend expects { store: ..., products: [...] }
-    // We can either fetch store info from DB or just hardcode/fetch from another place.
-    // For now, I'll return the same structure.
+    // Map the relational data back to the format the frontend expects
+    const products = productsFromDb.map(p => ({
+      ...p,
+      category: p.category.name
+    }));
     
     return NextResponse.json({
       store: {

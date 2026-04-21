@@ -56,11 +56,10 @@ export default function Navbar({ onCartOpen, searchQuery, onSearchChange }: Navb
   const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
-    fetch('/api/products')
+    fetch('/api/categories')
       .then(r => r.json())
       .then(data => {
-        const cats = [...new Set(data.products.map((p: any) => p.category))].sort() as string[];
-        setCategories(cats);
+        setCategories(data.map((c: any) => c.name));
       });
   }, []);
 

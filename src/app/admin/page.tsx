@@ -28,6 +28,7 @@ export default function AdminDashboard() {
   const { darkMode, user } = useStore();
   const router = useRouter();
   const [data, setData] = useState<ProductsData | null>(null);
+  const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,6 +42,10 @@ export default function AdminDashboard() {
         setData(d);
         setLoading(false);
       });
+    
+    fetch('/api/categories')
+      .then(r => r.json())
+      .then(cats => setCategories(cats.map((c: any) => c.name)));
   }, [user, router]);
 
   if (!user?.isAdmin || loading) {

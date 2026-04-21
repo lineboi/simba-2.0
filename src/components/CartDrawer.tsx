@@ -14,11 +14,21 @@ interface CartDrawerProps {
 }
 
 export default function CartDrawer({ open, onClose }: CartDrawerProps) {
-  const { cart, darkMode, language, removeFromCart, updateQuantity, cartTotal, clearCart } = useStore();
+  const { cart, darkMode, language, removeFromCart, updateQuantity, cartTotal, clearCart, user } = useStore();
   const total = cartTotal();
   const router = useRouter();
 
   const formatted = (n: number) => new Intl.NumberFormat('en-RW').format(n);
+
+  const handleCheckout = () => {
+    if (!user) {
+      router.push('/login');
+      onClose();
+    } else {
+      router.push('/checkout');
+      onClose();
+    }
+  };
 
   useEffect(() => {
     if (open) document.body.style.overflow = 'hidden';
@@ -182,12 +192,13 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
                   </p>
                 </div>
                 
-                <Link href="/checkout" onClick={onClose}>
-                  <button className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all shadow-lg shadow-orange-500/20 active:scale-95 flex items-center gap-2">
-                    Checkout
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </Link>
+                <button 
+                  onClick={handleCheckout}
+                  className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all shadow-lg shadow-orange-500/20 active:scale-95 flex items-center gap-2"
+                >
+                  {user ? 'Checkout' : 'Login to Buy'}
+                  <ArrowRight className="w-4 h-4" />
+                </button>
               </div>
               
               <div className="flex items-center justify-center gap-4 pt-2">

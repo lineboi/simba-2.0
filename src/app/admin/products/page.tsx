@@ -33,6 +33,7 @@ export default function AdminProducts() {
   const { darkMode, user } = useStore();
   const router = useRouter();
   const [data, setData] = useState<ProductsData | null>(null);
+  const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
@@ -43,7 +44,7 @@ export default function AdminProducts() {
   const [newProduct, setNewProduct] = useState({
     name: '',
     price: '',
-    category: '',
+    categoryId: '',
     inStock: true,
     image: '',
     unit: 'Pcs'
@@ -60,9 +61,11 @@ export default function AdminProducts() {
         setData(d);
         setLoading(false);
       });
+    
+    fetch('/api/categories')
+      .then(r => r.json())
+      .then(cats => setCategories(cats.map((c: any) => c.name)));
   }, [user, router]);
-
-  const categories = [...new Set(data?.products.map(p => p.category) || [])].sort();
   
   const filtered = (data?.products || []).filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
@@ -80,7 +83,7 @@ export default function AdminProducts() {
         id: Math.floor(Math.random() * 10000) + 20000,
         name: newProduct.name,
         price: parseFloat(newProduct.price),
-        category: newProduct.category || 'General',
+        category: newProduct.categoryId || 'General',
         subcategoryId: 1,
         inStock: newProduct.inStock,
         image: newProduct.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=400&auto=format&fit=crop',
@@ -96,7 +99,7 @@ export default function AdminProducts() {
 
       setIsSubmitting(false);
       setIsAddModalOpen(false);
-      setNewProduct({ name: '', price: '', category: '', inStock: true, image: '', unit: 'Pcs' });
+      setNewProduct({ name: '', price: '', categoryId: '', inStock: true, image: '', unit: 'Pcs' });
     }, 800);
   };
 
@@ -349,8 +352,8 @@ export default function AdminProducts() {
                   <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Category</label>
                   <select 
                     required
-                    value={newProduct.category}
-                    onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+                    value={newProduct.categoryId}
+                    onChange={(e) => setNewProduct({...newProduct, categoryId: e.target.value})}
                     className={`w-full px-4 py-2.5 rounded-xl border text-sm outline-none ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}
                   >
                     <option value="">Select Category</option>

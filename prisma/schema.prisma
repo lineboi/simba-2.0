@@ -19,11 +19,19 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  emoji    String?
+  products Product[]
+}
+
 model Product {
   id            Int         @id
   name          String
   price         Float
-  category      String
+  categoryId    Int
+  category      Category    @relation(fields: [categoryId], references: [id])
   subcategoryId Int
   inStock       Boolean     @default(true)
   image         String
@@ -38,7 +46,7 @@ model Order {
   userId     String?
   user       User?       @relation(fields: [userId], references: [id])
   total      Float
-  status     String      @default("pending")
+  status     String      @default("pending") // pending, completed, cancelled
   items      OrderItem[]
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt

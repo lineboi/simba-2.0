@@ -44,8 +44,13 @@ export default function Home() {
   const productsRef = useRef<HTMLDivElement>(null);
   const catRef = useRef<HTMLDivElement>(null);
 
+  const [categories, setCategories] = useState<string[]>([]);
+
   useEffect(() => {
     fetch('/api/products').then((r) => r.json()).then(setData);
+    fetch('/api/categories')
+      .then(r => r.json())
+      .then(data => setCategories(data.map((c: any) => c.name)));
   }, []);
 
   useEffect(() => {
@@ -67,11 +72,6 @@ export default function Home() {
     setPrevFilter({ category, search, sort });
     setVisibleCount(PAGE_SIZE);
   }
-
-  const categories = useMemo(() => {
-    if (!data) return [];
-    return [...new Set(data.products.map((p) => p.category))].sort();
-  }, [data]);
 
   const filtered = useMemo(() => {
     let products = data?.products ?? [];
