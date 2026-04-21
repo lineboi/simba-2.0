@@ -1,71 +1,9 @@
 'use client';
 
 import { useStore } from '@/lib/store';
+import { Review } from '@/lib/types';
 import { Star, Quote, PenLine, X, Check } from 'lucide-react';
-import { useState } from 'react';
-
-const INITIAL_REVIEWS = [
-  {
-    name: 'Gwiza Moise',
-    avatar: 'GM',
-    color: 'from-orange-500 to-amber-500',
-    rating: 5,
-    date: 'Mata 2025',
-    location: 'Kigali, Rwanda',
-    text: 'Simba Supermarket ni aho nagurana ibintu byose. Ibicuruzwa byabo biza kandi bireshya cyane. Natumije amakoperative menshi kandi byose byageze vuba kandi nta kibazo. Ndashimira cyane aba bakoze iyi website nziza!',
-    verified: true,
-  },
-  {
-    name: 'Amina Uwase',
-    avatar: 'AU',
-    color: 'from-pink-500 to-rose-500',
-    rating: 5,
-    date: 'Mata 2025',
-    location: 'Kigali, Rwanda',
-    text: 'I love shopping on Simba! The prices are unbeatable and delivery is always on time. Highly recommend to everyone in Kigali.',
-    verified: true,
-  },
-  {
-    name: 'Jean Pierre Habimana',
-    avatar: 'JP',
-    color: 'from-blue-500 to-cyan-500',
-    rating: 5,
-    date: 'Werurwe 2025',
-    location: 'Musanze, Rwanda',
-    text: 'Best online supermarket in Rwanda. The product variety is amazing — from food to cosmetics to baby products. Will definitely keep ordering!',
-    verified: true,
-  },
-  {
-    name: 'Claudine Mukamana',
-    avatar: 'CM',
-    color: 'from-purple-500 to-indigo-500',
-    rating: 4,
-    date: 'Werurwe 2025',
-    location: 'Kigali, Rwanda',
-    text: 'Simba niyo isoko nziza mu Rwanda. Ibicuruzwa bisa neza kandi abashoramari barabyita neza. Nzagaruka buri gihe!',
-    verified: true,
-  },
-  {
-    name: 'Eric Nshimiyimana',
-    avatar: 'EN',
-    color: 'from-green-500 to-teal-500',
-    rating: 5,
-    date: 'Gashyantare 2025',
-    location: 'Huye, Rwanda',
-    text: 'Fast delivery, great quality products, and excellent customer service. Simba has everything I need at prices I can afford.',
-    verified: true,
-  },
-  {
-    name: 'Marie Claire Ingabire',
-    avatar: 'MI',
-    color: 'from-amber-500 to-orange-500',
-    rating: 5,
-    date: 'Mutarama 2025',
-    location: 'Kigali, Rwanda',
-    text: 'Ndashimishwa cyane na Simba! Baby products zabo ziza kandi zifite ibiciro byiza. Ntabwo nzarekura gutura hano.',
-    verified: true,
-  },
-];
+import { useState, useEffect } from 'react';
 
 const AVATAR_COLORS = [
   'from-orange-500 to-amber-500',
@@ -75,8 +13,6 @@ const AVATAR_COLORS = [
   'from-green-500 to-teal-500',
   'from-red-500 to-orange-400',
 ];
-
-type Review = typeof INITIAL_REVIEWS[0];
 
 function Stars({ rating, interactive = false, onRate }: { rating: number; interactive?: boolean; onRate?: (r: number) => void }) {
   const [hovered, setHovered] = useState(0);
@@ -99,14 +35,26 @@ function Stars({ rating, interactive = false, onRate }: { rating: number; intera
 
 export default function Reviews() {
   const { darkMode, user } = useStore();
-  const [reviews, setReviews] = useState<Review[]>(INITIAL_REVIEWS);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
   const [active, setActive] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({ name: user?.name ?? '', text: '', rating: 0 });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const avg = (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1);
+  useEffect(() => {
+    fetch('/api/reviews')
+      .then(r => r.json())
+      .then(data => {
+        setReviews(data);
+        setLoading(false);
+      });
+  }, []);
+
+  const avg = reviews.length > 0 
+    ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+    : "0.0";
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -117,29 +65,46 @@ export default function Reviews() {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
     const initials = form.name.trim().split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
-    const newReview: Review = {
+    
+    const reviewData = {
       name: form.name.trim(),
       avatar: initials,
       color: AVATAR_COLORS[reviews.length % AVATAR_COLORS.length],
       rating: form.rating,
       date: new Date().toLocaleDateString('en-RW', { month: 'long', year: 'numeric' }),
-      location: 'Rwanda',
       text: form.text.trim(),
-      verified: false,
     };
-    setReviews([newReview, ...reviews]);
-    setActive(0);
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setShowForm(false);
-      setForm({ name: user?.name ?? '', text: '', rating: 0 });
-    }, 2000);
+
+    try {
+      const response = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reviewData),
+      });
+
+      if (response.ok) {
+        const savedReview = await response.json();
+        setReviews([savedReview, ...reviews]);
+        setActive(0);
+        setSubmitted(true);
+        setTimeout(() => {
+          setSubmitted(false);
+          setShowForm(false);
+          setForm({ name: user?.name ?? '', text: '', rating: 0 });
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Error posting review:', error);
+    }
   };
+
+  if (loading) {
+    return <div className="p-8 text-center"><div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" /></div>;
+  }
 
   return (
     <div className="space-y-4">

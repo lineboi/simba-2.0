@@ -53,3 +53,16 @@ model OrderItem {
   quantity  Int
   price     Float
 }
+
+model Review {
+  id        String   @id @default(cuid())
+  name      String
+  avatar    String
+  color     String
+  rating    Int
+  text      String
+  location  String   @default("Kigali, Rwanda")
+  verified  Boolean  @default(false)
+  date      String
+  createdAt DateTime @default(now())
+}

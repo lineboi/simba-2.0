@@ -32,4 +32,16 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface Review {
+  id: string;
+  name: string;
+  avatar: string;
+  color: string;
+  rating: number;
+  text: string;
+  location: string;
+  verified: boolean;
+  date: string;
+}
+
 export type Language = 'en' | 'fr' | 'rw';
