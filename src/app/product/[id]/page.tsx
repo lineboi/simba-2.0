@@ -7,7 +7,7 @@ import { t } from '@/lib/translations';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import ProductCard from '@/components/ProductCard';
-import { ArrowLeft, ShoppingCart, Check, Package, Tag, Hash, ShieldCheck, Truck } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Check, Package, Tag, Hash, ShieldCheck, Truck, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';

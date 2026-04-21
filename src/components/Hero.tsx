@@ -201,8 +201,10 @@ export default function Hero({ onShopNow }: HeroProps) {
             <button
               key={i}
               onClick={() => setIndex(i)}
-              className="relative h-1.5 md:h-2 rounded-full overflow-hidden transition-all duration-300"
-              style={{ width: i === index ? (window?.innerWidth < 768 ? '30px' : '40px') : '8px', backgroundColor: darkMode ? '#334155' : '#E2E8F0' }}
+              className={`relative h-1.5 md:h-2 rounded-full overflow-hidden transition-all duration-300 ${
+                i === index ? 'w-8 md:w-10' : 'w-2'
+              }`}
+              style={{ backgroundColor: darkMode ? '#334155' : '#E2E8F0' }}
             >
               {i === index && (
                 <motion.div 
