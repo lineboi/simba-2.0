@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { ProductsData } from '@/lib/types';
 import { useStore } from '@/lib/store';
-import { t } from '@/lib/translations';
+import { t, tCat } from '@/lib/translations';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import ProductCard from '@/components/ProductCard';
@@ -16,11 +16,6 @@ import {
   Search, 
   ArrowUpDown, 
   ChevronUp, 
-  Filter, 
-  LayoutGrid, 
-  Sparkles,
-  ShoppingBag,
-  Zap,
   Star,
   X,
   ChevronRight
@@ -44,6 +39,10 @@ const CATEGORY_META: Record<string, { emoji: string; color: string }> = {
   'General': { emoji: '🛒', color: 'from-gray-400 to-slate-500' },
 };
 
+interface Category {
+  name: string;
+}
+
 export default function Home() {
   const { darkMode, language } = useStore();
   const [data, setData] = useState<ProductsData | null>(null);
@@ -64,7 +63,7 @@ export default function Home() {
     fetch('/api/products').then((r) => r.json()).then(setData);
     fetch('/api/categories')
       .then(r => r.json())
-      .then(data => setCategories(data.map((c: any) => c.name)));
+      .then((catData: Category[]) => setCategories(catData.map((c) => c.name)));
   }, []);
 
   useEffect(() => {
@@ -120,28 +119,39 @@ export default function Home() {
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-8 space-y-12 md:space-y-16">
         
         {/* HERO SECTION */}
-        <Hero onShopNow={scrollToProducts} />
+        <Hero
+          onShopNow={scrollToProducts}
+          categories={categories}
+          onCategoryClick={(cat) => { setCategory(cat); scrollToProducts(); }}
+        />
 
         {/* CATEGORIES SECTION */}
         <section id="categories" ref={catRef} className="scroll-mt-24">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-orange-600">
-                <Sparkles className="w-5 h-5 fill-current" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Discovery</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em]">{t(language, 'discovery')}</span>
               </div>
               <div className="flex items-center justify-between">
                 <h2 className="text-3xl md:text-4xl font-black tracking-tighter">{t(language, 'shopByCategory')}</h2>
-                <button 
+                {/* Mobile-only "View All" button */}
+                <button
                   onClick={() => setShowCatDrawer(true)}
-                  className="lg:hidden text-orange-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 bg-orange-50 dark:bg-orange-500/10 px-4 py-2 rounded-xl"
+                  className="md:hidden text-orange-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 bg-orange-50 dark:bg-orange-500/10 px-4 py-2 rounded-xl"
                 >
-                  View All
+                  {t(language, 'viewAll')}
                   <ChevronRight className="w-3 h-3" />
                 </button>
               </div>
             </div>
-            <p className="hidden md:block text-xs font-bold text-slate-400 uppercase tracking-widest">Swipe to explore →</p>
+            {/* Desktop "Explore" — now a real button that opens the drawer */}
+            <button
+              onClick={() => setShowCatDrawer(true)}
+              className="hidden md:flex items-center gap-1.5 text-xs font-black text-orange-600 uppercase tracking-widest hover:underline underline-offset-4 transition-all"
+            >
+              {t(language, 'viewAllCategories')}
+              <ChevronRight className="w-3 h-3" />
+            </button>
           </div>
           
           <div className="flex lg:grid lg:grid-cols-12 gap-4 overflow-x-auto lg:overflow-visible pb-6 lg:pb-0 scrollbar-hide -mx-4 px-4 lg:mx-0 lg:px-0">
@@ -171,7 +181,7 @@ export default function Home() {
                   <span className={`text-[11px] text-center font-black uppercase tracking-wider leading-tight ${
                     isSelected ? 'text-white' : darkMode ? 'text-slate-400' : 'text-slate-600'
                   }`}>
-                    {cat.split(' ')[0]}
+                    {tCat(language, cat).split(' ')[0]}
                   </span>
                 </motion.button>
               );
@@ -188,9 +198,9 @@ export default function Home() {
               <div className="space-y-1">
                 <h3 className="text-xl font-black tracking-tight flex items-center gap-2">
                   <Star className="w-5 h-5 text-amber-400 fill-current" />
-                  Community
+                  {t(language, 'community')}
                 </h3>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Real voices, real impact</p>
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t(language, 'realVoices')}</p>
               </div>
               <Reviews />
             </div>
@@ -218,9 +228,9 @@ export default function Home() {
                     className="bg-transparent text-[11px] font-black uppercase tracking-widest outline-none cursor-pointer min-w-[100px]"
                   >
                     <option value="">{t(language, 'sortBy')}</option>
-                    <option value="price-asc">Cheapest</option>
-                    <option value="price-desc">Premium</option>
-                    <option value="name-az">A-Z Name</option>
+                    <option value="price-asc">{t(language, 'cheapest')}</option>
+                    <option value="price-desc">{t(language, 'premium')}</option>
+                    <option value="name-az">{t(language, 'azName')}</option>
                   </select>
                 </div>
               </div>
@@ -245,13 +255,13 @@ export default function Home() {
                     onClick={() => { setCategory(''); setSearch(''); setSort(''); }}
                     className="text-orange-600 font-black uppercase text-xs tracking-[0.2em] hover:underline"
                   >
-                    Clear all filters
+                    {t(language, 'clearFilters')}
                   </button>
                 </motion.div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-4 md:gap-8">
                   <AnimatePresence mode="popLayout">
-                    {visible.map((product, i) => (
+                    {visible.map((product) => (
                       <ProductCard key={product.id} product={product} />
                     ))}
                   </AnimatePresence>
@@ -267,7 +277,7 @@ export default function Home() {
                     onClick={() => setVisibleCount((v) => v + PAGE_SIZE)}
                     className="shimmer-btn bg-slate-950 dark:bg-orange-600 text-white font-black uppercase tracking-[0.3em] text-[10px] px-12 py-5 rounded-[2rem] shadow-2xl"
                   >
-                    Load More Items
+                    {t(language, 'loadMore')}
                   </motion.button>
                 </div>
               )}
@@ -298,8 +308,8 @@ export default function Home() {
             >
               <div className="flex items-center justify-between mb-8">
                 <div className="space-y-1">
-                  <h3 className="text-2xl font-black tracking-tighter">Explore Categories</h3>
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">What are you looking for?</p>
+                  <h3 className="text-2xl font-black tracking-tighter">{t(language, 'exploreCategories2')}</h3>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t(language, 'whatLookingFor')}</p>
                 </div>
                 <button 
                   onClick={() => setShowCatDrawer(false)}
@@ -326,7 +336,7 @@ export default function Home() {
                       }`}
                     >
                       <span className="text-3xl mb-1">{meta.emoji}</span>
-                      <span className="text-[10px] font-black uppercase tracking-wider text-center">{cat}</span>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-center">{tCat(language, cat)}</span>
                     </button>
                   );
                 })}

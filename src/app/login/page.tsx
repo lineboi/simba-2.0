@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useStore } from '@/lib/store';
+import { t } from '@/lib/translations';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Loader2 } from 'lucide-react';
@@ -9,7 +10,8 @@ import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Loader2 } from 'lucide-react'
 type Mode = 'login' | 'register';
 
 export default function LoginPage() {
-  const { darkMode, login } = useStore();
+  const { darkMode, login, language } = useStore();
+  const T = (key: string) => t(language, key);
   const router = useRouter();
   const [mode, setMode] = useState<Mode>('login');
   const [loading, setLoading] = useState(false);
@@ -27,28 +29,43 @@ export default function LoginPage() {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (mode === 'register' && !form.name.trim()) e.name = 'Name is required';
-    if (!form.email.trim()) e.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Invalid email address';
-    if (!form.password) e.password = 'Password is required';
-    else if (form.password.length < 6) e.password = 'Minimum 6 characters';
+    if (mode === 'register' && !form.name.trim()) e.name = T('nameRequired');
+    if (!form.email.trim()) e.email = T('emailRequired');
+    else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = T('invalidEmail');
+    if (!form.password) e.password = T('passwordRequired');
+    else if (form.password.length < 6) e.password = T('minChars');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      login({
-        name: mode === 'register' ? form.name : form.email.split('@')[0],
-        email: form.email,
-        isAdmin: form.email === 'admin@simba.com',
+    setErrors({});
+
+    try {
+      const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
       });
-      router.push(form.email === 'admin@simba.com' ? '/admin' : '/');
-    }, 1200);
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrors({ general: data.error || T('authFailed') });
+        return;
+      }
+
+      login(data.user);
+      router.push(data.user.role === 'ADMIN' || data.user.role === 'BRANCH_MANAGER' || data.user.role === 'BRANCH_STAFF' ? '/admin' : '/');
+    } catch {
+      setErrors({ general: T('somethingWrong') });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputClass = (field: string) =>
@@ -71,7 +88,7 @@ export default function LoginPage() {
         </Link>
         <Link href="/" className={`flex items-center gap-1.5 text-sm ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'} transition`}>
           <ArrowLeft className="w-4 h-4" />
-          Back to shop
+          {T('backToShop')}
         </Link>
       </div>
 
@@ -84,12 +101,10 @@ export default function LoginPage() {
               <span className="text-3xl">🛒</span>
             </div>
             <h1 className={`text-2xl font-extrabold ${text}`}>
-              {mode === 'login' ? 'Welcome back!' : 'Create account'}
+              {mode === 'login' ? T('welcomeBack') : T('createAccount')}
             </h1>
             <p className={`text-sm mt-1 ${label}`}>
-              {mode === 'login'
-                ? 'Sign in to your Simba account'
-                : 'Join Rwanda\'s #1 online supermarket'}
+              {mode === 'login' ? T('signInToSimba') : T('joinSupermarket')}
             </p>
           </div>
 
@@ -105,7 +120,7 @@ export default function LoginPage() {
                     : darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                {m === 'login' ? 'Sign In' : 'Sign Up'}
+                {m === 'login' ? T('signIn') : T('signUp')}
               </button>
             ))}
           </div>
@@ -114,12 +129,12 @@ export default function LoginPage() {
             {/* Name (register only) */}
             {mode === 'register' && (
               <div>
-                <label className={`text-xs font-semibold block mb-1.5 ${label}`}>Full Name</label>
+                <label className={`text-xs font-semibold block mb-1.5 ${label}`}>{T('fullName')}</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Your full name"
+                    placeholder={T('namePlaceholder')}
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     className={inputClass('name')}
@@ -131,12 +146,12 @@ export default function LoginPage() {
 
             {/* Email */}
             <div>
-              <label className={`text-xs font-semibold block mb-1.5 ${label}`}>Email address</label>
+              <label className={`text-xs font-semibold block mb-1.5 ${label}`}>{T('emailAddress')}</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder={T('emailPlaceholderLogin')}
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                   className={inputClass('email')}
@@ -147,12 +162,12 @@ export default function LoginPage() {
 
             {/* Password */}
             <div>
-              <label className={`text-xs font-semibold block mb-1.5 ${label}`}>Password</label>
+              <label className={`text-xs font-semibold block mb-1.5 ${label}`}>{T('password')}</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder={mode === 'register' ? 'Min. 6 characters' : 'Enter your password'}
+                  placeholder={mode === 'register' ? T('passwordPlaceholderRegister') : T('passwordPlaceholderLogin')}
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   className={`${inputClass('password')} pr-10`}
@@ -172,10 +187,12 @@ export default function LoginPage() {
             {mode === 'login' && (
               <div className="text-right">
                 <button type="button" className="text-xs text-orange-500 hover:text-orange-600 font-medium">
-                  Forgot password?
+                  {T('forgotPassword')}
                 </button>
               </div>
             )}
+
+            {errors.general && <p className="text-red-400 text-xs text-center">{errors.general}</p>}
 
             {/* Submit */}
             <button
@@ -184,9 +201,9 @@ export default function LoginPage() {
               className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-70 text-white py-3.5 rounded-2xl font-bold text-sm transition-all hover:shadow-lg hover:shadow-orange-500/30 mt-2"
             >
               {loading ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> {mode === 'login' ? 'Signing in...' : 'Creating account...'}</>
+                <><Loader2 className="w-4 h-4 animate-spin" /> {mode === 'login' ? T('signingIn') : T('creatingAccount')}</>
               ) : (
-                mode === 'login' ? 'Sign In' : 'Create Account'
+                mode === 'login' ? T('signIn') : T('createAccount')
               )}
             </button>
           </form>
@@ -194,7 +211,7 @@ export default function LoginPage() {
           {/* Divider */}
           <div className="flex items-center gap-3 my-6">
             <div className={`flex-1 h-px ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`} />
-            <span className={`text-xs ${label}`}>or continue as</span>
+            <span className={`text-xs ${label}`}>{T('orContinueAs')}</span>
             <div className={`flex-1 h-px ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`} />
           </div>
 
@@ -205,18 +222,18 @@ export default function LoginPage() {
                 ? 'border-gray-700 text-gray-300 hover:bg-gray-700'
                 : 'border-gray-200 text-gray-700 hover:bg-gray-50'
             }`}>
-              👋 Guest — Browse without account
+              👋 {T('guestBrowse')}
             </button>
           </Link>
 
           {/* Switch mode */}
           <p className={`text-center text-sm mt-6 ${label}`}>
-            {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+            {mode === 'login' ? T('dontHaveAccount') + ' ' : T('alreadyHaveAccount') + ' '}
             <button
               onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setErrors({}); }}
               className="text-orange-500 font-semibold hover:text-orange-600"
             >
-              {mode === 'login' ? 'Sign up' : 'Sign in'}
+              {mode === 'login' ? T('signUp') : T('signIn')}
             </button>
           </p>
         </div>

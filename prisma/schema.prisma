@@ -10,13 +10,44 @@ datasource db {
 }
 
 model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  name           String?
+  password       String   @default("password123") // Simple password for demo
+  role           String   @default("CUSTOMER") // CUSTOMER, BRANCH_MANAGER, BRANCH_STAFF, ADMIN
+  branchId       String?
+  branch         Branch?  @relation(fields: [branchId], references: [id])
+  orders         Order[]  @relation("CustomerOrders")
+  assignedOrders Order[]  @relation("StaffOrders")
+  noShowFlags    Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Branch {
+  id           String        @id @default(cuid())
+  name         String        @unique
+  location     String
+  stock        BranchStock[]
+  users        User[]
+  orders       Order[]
+  reviews      Review[]
+  rating       Float         @default(5.0)
+  reviewCount  Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model BranchStock {
   id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  isAdmin   Boolean  @default(false)
-  orders    Order[]
-  createdAt DateTime @default(now())
+  branchId  String
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int      @default(0)
   updatedAt DateTime @updatedAt
+
+  @@unique([branchId, productId])
 }
 
 model Category {
@@ -27,29 +58,36 @@ model Category {
 }
 
 model Product {
-  id            Int         @id
+  id            Int           @id
   name          String
   price         Float
   categoryId    Int
-  category      Category    @relation(fields: [categoryId], references: [id])
+  category      Category      @relation(fields: [categoryId], references: [id])
   subcategoryId Int
-  inStock       Boolean     @default(true)
   image         String
   unit          String
   orderItems    OrderItem[]
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  stock         BranchStock[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 }
 
 model Order {
-  id         String      @id @default(cuid())
-  userId     String?
-  user       User?       @relation(fields: [userId], references: [id])
-  total      Float
-  status     String      @default("pending") // pending, completed, cancelled
-  items      OrderItem[]
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id              String      @id @default(cuid())
+  userId          String?
+  user            User?       @relation("CustomerOrders", fields: [userId], references: [id])
+  branchId        String
+  branch          Branch      @relation(fields: [branchId], references: [id])
+  total           Float
+  status          String      @default("pending") // pending, accepted, preparing, ready, completed, cancelled
+  pickupTime      DateTime?
+  depositPaid     Boolean     @default(false)
+  depositAmount   Float       @default(0)
+  assignedStaffId String?
+  assignedStaff   User?       @relation("StaffOrders", fields: [assignedStaffId], references: [id])
+  items           OrderItem[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 }
 
 model OrderItem {
@@ -64,6 +102,8 @@ model OrderItem {
 
 model Review {
   id        String   @id @default(cuid())
+  branchId  String?
+  branch    Branch?  @relation(fields: [branchId], references: [id])
   name      String
   avatar    String
   color     String

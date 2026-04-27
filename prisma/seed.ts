@@ -7,16 +7,26 @@ const dbPath = path.join(process.cwd(), 'prisma', 'dev.db');
 const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` });
 const prisma = new PrismaClient({ adapter });
 
+interface RawProduct {
+  id: number;
+  name: string;
+  price: number;
+  category: string;
+  subcategoryId: number;
+  image: string;
+  unit: string;
+}
+
 async function main() {
   const productsPath = path.join(process.cwd(), 'public', 'simba_products.json');
   const rawData = fs.readFileSync(productsPath, 'utf-8');
-  const data = JSON.parse(rawData);
+  const data = JSON.parse(rawData) as { products: RawProduct[] };
 
   console.log('Start seeding...');
 
   // 1. Seed Categories
   const categoryMap: Record<string, number> = {};
-  const categories = [...new Set(data.products.map((p: any) => p.category))] as string[];
+  const categories = [...new Set(data.products.map((p) => p.category))];
 
   const CATEGORY_EMOJIS: Record<string, string> = {
     'Food Products': '🥬',
@@ -46,6 +56,7 @@ async function main() {
   }
 
   // 2. Seed Products
+  const productIds: number[] = [];
   for (const p of data.products) {
     await prisma.product.upsert({
       where: { id: p.id },
@@ -54,7 +65,6 @@ async function main() {
         price: p.price,
         categoryId: categoryMap[p.category],
         subcategoryId: p.subcategoryId,
-        inStock: p.inStock,
         image: p.image,
         unit: p.unit,
       },
@@ -64,14 +74,73 @@ async function main() {
         price: p.price,
         categoryId: categoryMap[p.category],
         subcategoryId: p.subcategoryId,
-        inStock: p.inStock,
         image: p.image,
         unit: p.unit,
       },
     });
+    productIds.push(p.id);
   }
 
-  // 3. Seed Reviews
+  // 3. Seed Branches
+  const BRANCHES = [
+    { name: 'Simba Supermarket Remera', location: 'Remera, Kigali' },
+    { name: 'Simba Supermarket Kimironko', location: 'Kimironko, Kigali' },
+    { name: 'Simba Supermarket Kacyiru', location: 'Kacyiru, Kigali' },
+    { name: 'Simba Supermarket Nyamirambo', location: 'Nyamirambo, Kigali' },
+    { name: 'Simba Supermarket Gikondo', location: 'Gikondo, Kigali' },
+    { name: 'Simba Supermarket Kanombe', location: 'Kanombe, Kigali' },
+    { name: 'Simba Supermarket Kinyinya', location: 'Kinyinya, Kigali' },
+    { name: 'Simba Supermarket Kibagabaga', location: 'Kibagabaga, Kigali' },
+    { name: 'Simba Supermarket Nyanza', location: 'Nyanza, Kigali' },
+  ];
+
+  const branchIds: string[] = [];
+  for (const b of BRANCHES) {
+    const branch = await prisma.branch.upsert({
+      where: { name: b.name },
+      update: {},
+      create: b,
+    });
+    branchIds.push(branch.id);
+  }
+
+  // 4. Seed Inventory (Random stock for each branch)
+  for (const branchId of branchIds) {
+    for (const productId of productIds) {
+      await prisma.branchStock.upsert({
+        where: {
+          branchId_productId: {
+            branchId,
+            productId,
+          },
+        },
+        update: {},
+        create: {
+          branchId,
+          productId,
+          quantity: Math.floor(Math.random() * 50) + 10, // 10-60 items
+        },
+      });
+    }
+  }
+
+  // 5. Seed Users
+  const users = [
+    { email: 'admin@simba.rw', name: 'Admin User', role: 'ADMIN', password: 'password123' },
+    { email: 'remera@simba.rw', name: 'Remera Manager', role: 'BRANCH_MANAGER', branchId: branchIds[0], password: 'password123' },
+    { email: 'staff@simba.rw', name: 'Remera Staff', role: 'BRANCH_STAFF', branchId: branchIds[0], password: 'password123' },
+    { email: 'test@test.com', name: 'Customer User', role: 'CUSTOMER', password: 'password123' },
+  ];
+
+  for (const u of users) {
+    await prisma.user.upsert({
+      where: { email: u.email },
+      update: u,
+      create: u,
+    });
+  }
+
+  // 6. Seed Reviews (linked to branches)
   const INITIAL_REVIEWS = [
     {
       name: 'Gwiza Moise',
@@ -80,8 +149,9 @@ async function main() {
       rating: 5,
       date: 'Mata 2025',
       location: 'Kigali, Rwanda',
-      text: 'Simba Supermarket ni aho nagurana ibintu byose. Ibicuruzwa byabo biza kandi bireshya cyane. Natumije amakoperative menshi kandi byose byageze vuba kandi nta kibazo. Ndashimira cyane aba bakoze iyi website nziza!',
+      text: 'Simba Supermarket ni aho nagurana ibintu byose. Ibicuruzwa byabo biza kandi bireshya cyane.',
       verified: true,
+      branchId: branchIds[0]
     },
     {
         name: 'Richard Madete',
@@ -90,104 +160,13 @@ async function main() {
         rating: 5,
         date: 'April 2026',
         location: 'UTC, Kigali',
-        text: 'Simba Supermarket is simple the largest and the best supermarket in Kigali city center and in the country in general.',
+        text: 'Simba Supermarket is simple the largest and the best supermarket in Kigali city center.',
         verified: true,
-    },
-    {
-        name: 'Stella Matutina',
-        avatar: 'SM',
-        color: 'from-yellow-500 to-orange-500',
-        rating: 5,
-        date: 'April 2026',
-        location: 'KN 5 Rd, Kigali',
-        text: 'It’s the first supermarket in Kigali where you can find everything you want + cooked food and it’s affordable you can also find it everywhere in Kigali it has more than 7 branches in Kigali',
-        verified: true,
-    },
-    {
-        name: 'Dipankar Lahkar',
-        avatar: 'DL',
-        color: 'from-green-500 to-teal-500',
-        rating: 5,
-        date: 'April 2026',
-        location: 'KG 541 St, Kigali',
-        text: 'Simba stores are the greatest location in Kigali to buy groceries and other home items.',
-        verified: true,
-    },
-    {
-        name: 'MUHOZA Rene',
-        avatar: 'MR',
-        color: 'from-purple-500 to-pink-500',
-        rating: 4,
-        date: 'April 2026',
-        location: '24Q5+R2R, Kigali',
-        text: 'Despite its dim lighting, Simba is packed with nearly everything you’d need food‑wise in Rwanda it’s full of products.',
-        verified: true,
-    },
-    {
-        name: 'Niyotwiringiye Charles',
-        avatar: 'NC',
-        color: 'from-orange-500 to-red-500',
-        rating: 5,
-        date: 'April 2026',
-        location: 'Kimironko, Kigali',
-        text: 'Simba Supermarket, Kimironko is a Supermarket located at 342F+3V5, Kimironko, Kigali, RW.',
-        verified: true,
-    },
-    {
-        name: 'Cyuzuzo Ngenzi',
-        avatar: 'CN',
-        color: 'from-red-500 to-rose-500',
-        rating: 1,
-        date: 'April 2026',
-        location: 'Multiple Locations',
-        text: 'Very bad experiences across multiple Simba locations (Musanze, Kigali city center near Beka, and Nyamirambo near Cosmos).',
-        verified: false,
-    },
-    {
-        name: 'SIBOMANA Eugene',
-        avatar: 'SE',
-        color: 'from-cyan-500 to-blue-500',
-        rating: 5,
-        date: 'April 2026',
-        location: '24G3+MCV, Kigali',
-        text: 'Simba is my go-to supermarket in Kigali.',
-        verified: true,
-    },
-    {
-        name: 'Matylda B',
-        avatar: 'MB',
-        color: 'from-emerald-500 to-green-500',
-        rating: 4,
-        date: 'April 2026',
-        location: 'Kigali, Rwanda',
-        text: 'I assure you I don’t come all the way from Europe to Rwanda in order to steal groceries!',
-        verified: true,
-    },
-    {
-        name: 'Bethany Mattison',
-        avatar: 'BM',
-        color: 'from-rose-500 to-pink-500',
-        rating: 3,
-        date: 'April 2026',
-        location: 'KK 35 Ave, Kigali',
-        text: 'It\'s not the best Simba supermarket But I\'ve only been to three counting this one it is the least of the three I\'ve been to.',
-        verified: false,
-    },
-    {
-        name: 'mutuyimana',
-        avatar: 'M',
-        color: 'from-amber-500 to-yellow-500',
-        rating: 4,
-        date: 'April 2026',
-        location: 'Kigali, Rwanda',
-        text: 'Supermarket',
-        verified: false,
+        branchId: branchIds[1]
     }
   ];
 
-  // Clear old reviews to avoid duplicates on re-seed
   await prisma.review.deleteMany({});
-
   for (const r of INITIAL_REVIEWS) {
     await prisma.review.create({
       data: r

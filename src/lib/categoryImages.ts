@@ -1,3 +1,33 @@
+export const categoryEmojis: Record<string, string> = {
+  'Food Products': '🥬',
+  'Cosmetics & Personal Care': '🧴',
+  'Cleaning & Sanitary': '🧹',
+  'Alcoholic Drinks': '🍺',
+  'Baby Products': '👶',
+  'Kitchenware & Electronics': '🍳',
+  'Kitchen Storage': '🫙',
+  'Sports & Fitness': '💪',
+  'Sports & Wellness': '🏃',
+  'Stationery': '📚',
+  'Pet Care': '🐾',
+  'General': '🛒',
+};
+
+export const categoryBgs: Record<string, string> = {
+  'Food Products': 'bg-green-100 dark:bg-green-900/30',
+  'Cosmetics & Personal Care': 'bg-pink-100 dark:bg-pink-900/30',
+  'Cleaning & Sanitary': 'bg-sky-100 dark:bg-sky-900/30',
+  'Alcoholic Drinks': 'bg-amber-100 dark:bg-amber-900/30',
+  'Baby Products': 'bg-blue-100 dark:bg-blue-900/30',
+  'Kitchenware & Electronics': 'bg-slate-100 dark:bg-slate-800/50',
+  'Kitchen Storage': 'bg-orange-100 dark:bg-orange-900/30',
+  'Sports & Fitness': 'bg-red-100 dark:bg-red-900/30',
+  'Sports & Wellness': 'bg-emerald-100 dark:bg-emerald-900/30',
+  'Stationery': 'bg-purple-100 dark:bg-purple-900/30',
+  'Pet Care': 'bg-yellow-100 dark:bg-yellow-900/30',
+  'General': 'bg-gray-100 dark:bg-gray-800/50',
+};
+
 export const categoryImages: Record<string, string> = {
   'Food Products': 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80',
   'Cosmetics & Personal Care': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=800&q=80',

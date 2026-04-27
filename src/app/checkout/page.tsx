@@ -3,23 +3,40 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { t } from '@/lib/translations';
+import { Branch } from '@/lib/types';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, CheckCircle, Smartphone, Banknote, Loader2, ShoppingBag } from 'lucide-react';
+import {
+  ArrowLeft,
+  CheckCircle,
+  Smartphone,
+  Clock,
+  MapPin,
+  ShoppingBag,
+  Info,
+  Star
+} from 'lucide-react';
 
-type Step = 'details' | 'payment' | 'processing' | 'success';
+type Step = 'branch' | 'deposit' | 'processing' | 'success';
+
+const DEPOSIT_AMOUNT = 500;
 
 export default function CheckoutPage() {
   const { darkMode, language, cart, cartTotal, clearCart, user } = useStore();
+  const T = (key: string) => t(language, key);
   const [cartOpen, setCartOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const [step, setStep] = useState<Step>('details');
-  const [paymentMethod, setPaymentMethod] = useState<'momo' | 'cod'>('momo');
-  const [form, setForm] = useState({ name: user?.name || '', address: '', phone: '', momoPhone: '' });
+  const [step, setStep] = useState<Step>('branch');
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [selectedBranch, setSelectedBranch] = useState<string>('');
+  const [pickupTime, setPickupTime] = useState<string>('');
+  const [momoPhone, setMomoPhone] = useState<string>('');
+  const [reviewText, setReviewText] = useState<string>('');
+  const [rating, setRating] = useState<number>(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loadingBranches, setLoadingBranches] = useState(true);
   const router = useRouter();
 
   const total = cartTotal();
@@ -31,43 +48,81 @@ export default function CheckoutPage() {
     }
   }, [user, router]);
 
+  useEffect(() => {
+    fetch('/api/branches')
+      .then(res => res.json())
+      .then(data => {
+        setBranches(data);
+        setLoadingBranches(false);
+      });
+  }, []);
+
   if (!user) return null;
 
-  const validate = () => {
+  const validateBranchStep = () => {
     const e: Record<string, string> = {};
-    if (!form.name.trim()) e.name = 'Required';
-    if (!form.address.trim()) e.address = 'Required';
-    if (!form.phone.trim()) e.phone = 'Required';
-    if (paymentMethod === 'momo' && !form.momoPhone.trim()) e.momoPhone = 'Required';
+    if (!selectedBranch) e.branch = T('pleaseSelectBranch');
+    if (!pickupTime) e.time = T('pleaseSelectTime');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  const handleProceed = () => {
-    if (!validate()) return;
-    setStep('payment');
+  const handleProceedToDeposit = () => {
+    if (!validateBranchStep()) return;
+    setStep('deposit');
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
+    if (!momoPhone) {
+      setErrors({ momoPhone: T('required') });
+      return;
+    }
+
     setStep('processing');
-    setTimeout(() => {
-      clearCart();
-      setStep('success');
-    }, 2500);
+
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          branchId: selectedBranch,
+          items: cart,
+          total: total + DEPOSIT_AMOUNT,
+          depositAmount: DEPOSIT_AMOUNT,
+          pickupTime: new Date(new Date().setHours(parseInt(pickupTime.split(':')[0]), 0, 0, 0)).toISOString(),
+        }),
+      });
+
+      if (res.ok) {
+        setTimeout(() => {
+          clearCart();
+          setStep('success');
+        }, 2000);
+      } else {
+        setErrors({ general: T('failedOrder') });
+        setStep('deposit');
+      }
+    } catch (err) {
+      console.error(err);
+      setErrors({ general: T('somethingWrong') });
+      setStep('deposit');
+    }
   };
 
   if (cart.length === 0 && step !== 'success') {
     return (
-      <div className={`min-h-screen ${darkMode ? 'bg-gray-950' : 'bg-gray-50'}`}>
-        <Navbar onCartOpen={() => setCartOpen(true)} searchQuery={search} onSearchChange={setSearch} />
+      <div className={`min-h-screen ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
+        <Navbar onCartOpen={() => setCartOpen(true)} searchQuery="" onSearchChange={() => {}} />
+        <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
         <div className="max-w-md mx-auto px-4 py-24 text-center">
-          <ShoppingBag className={`w-20 h-20 mx-auto mb-6 ${darkMode ? 'text-gray-700' : 'text-gray-200'}`} />
-          <p className={`text-xl font-medium mb-6 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-            {t(language, 'cartEmpty')}
+          <ShoppingBag className={`w-20 h-20 mx-auto mb-6 ${darkMode ? 'text-slate-800' : 'text-slate-200'}`} />
+          <p className={`text-xl font-medium mb-6 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+            {T('cartEmpty')}
           </p>
           <Link href="/">
-            <button className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-2xl font-bold transition">
-              {t(language, 'continueShopping')}
+            <button className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-2xl font-bold transition shadow-lg shadow-orange-500/20">
+              {T('continueShopping')}
             </button>
           </Link>
         </div>
@@ -77,21 +132,70 @@ export default function CheckoutPage() {
 
   if (step === 'success') {
     return (
-      <div className={`min-h-screen ${darkMode ? 'bg-gray-950' : 'bg-gray-50'}`}>
-        <Navbar onCartOpen={() => setCartOpen(true)} searchQuery={search} onSearchChange={setSearch} />
-        <div className="max-w-md mx-auto px-4 py-16 text-center">
-          <div className="w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-14 h-14 text-orange-500" />
+      <div className={`min-h-screen ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
+        <Navbar onCartOpen={() => setCartOpen(true)} searchQuery="" onSearchChange={() => {}} />
+        <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+          <div className="w-24 h-24 bg-green-100 dark:bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="w-14 h-14 text-green-500" />
           </div>
-          <h1 className={`text-2xl font-extrabold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            {t(language, 'orderSuccess')}
+          <h1 className={`text-3xl font-black tracking-tighter mb-3 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+            {T('orderSuccess')}
           </h1>
-          <p className={`mb-8 leading-relaxed ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            {t(language, 'orderSuccessMsg')}
+          <p className={`mb-12 font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            {T('orderSuccessMsg')}
           </p>
+
+          <div className={`p-8 rounded-[2.5rem] border text-left mb-12 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-xl'}`}>
+            <h3 className="text-xl font-black tracking-tight mb-2">{T('rateExperience')}</h3>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6">{T('helpOthers')}</p>
+
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setRating(star)}
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
+                      rating >= star ? 'bg-orange-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                    }`}
+                  >
+                    <Star className={`w-6 h-6 ${rating >= star ? 'fill-current' : ''}`} />
+                  </button>
+                ))}
+              </div>
+              <textarea
+                placeholder={T('rateExperience') + '...'}
+                className={`w-full p-6 rounded-[2rem] border-2 outline-none transition-all h-32 resize-none text-sm ${
+                  darkMode ? 'bg-slate-800 border-slate-700 focus:border-orange-500' : 'bg-slate-50 border-slate-100 focus:border-orange-500'
+                }`}
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+              />
+              <button
+                onClick={async () => {
+                  if (!rating) return alert(T('pleaseSelectRating'));
+                  await fetch('/api/reviews', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      branchId: selectedBranch,
+                      name: user.name,
+                      rating,
+                      text: reviewText,
+                    })
+                  });
+                  router.push('/');
+                }}
+                className="w-full bg-slate-950 dark:bg-orange-600 text-white py-5 rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs"
+              >
+                {T('submitReviewHome')}
+              </button>
+            </div>
+          </div>
+
           <Link href="/">
-            <button className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-3 rounded-2xl font-bold transition-all hover:shadow-lg hover:shadow-orange-500/30">
-              {t(language, 'backToShopping')}
+            <button className="bg-slate-900 dark:bg-slate-800 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all hover:shadow-2xl">
+              {T('backToShopping')}
             </button>
           </Link>
         </div>
@@ -101,245 +205,269 @@ export default function CheckoutPage() {
 
   if (step === 'processing') {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-gray-950' : 'bg-gray-50'}`}>
+      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
         <div className="text-center">
-          <Loader2 className="w-16 h-16 text-orange-500 animate-spin mx-auto mb-4" />
-          <p className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-            {t(language, 'processing')}
+          <div className="relative w-24 h-24 mx-auto mb-6">
+            <div className="absolute inset-0 border-4 border-orange-500/20 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-orange-500 rounded-full border-t-transparent animate-spin"></div>
+            <Smartphone className="absolute inset-0 m-auto w-10 h-10 text-orange-500" />
+          </div>
+          <p className={`text-xl font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+            {T('processingMomo')}
           </p>
-          {paymentMethod === 'momo' && (
-            <p className={`text-sm mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-              {t(language, 'momoInstruction')}
-            </p>
-          )}
+          <p className={`text-sm mt-2 font-medium ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+            {T('momoInstruction')}
+          </p>
         </div>
       </div>
     );
   }
 
-  const inputClass = (field: string) =>
-    `w-full px-4 py-3 rounded-xl border text-sm outline-none transition ${
-      errors[field] ? 'border-red-400' : darkMode ? 'border-gray-700 focus:border-orange-500' : 'border-gray-200 focus:border-orange-500'
-    } ${darkMode ? 'bg-gray-700 text-white placeholder-gray-500' : 'bg-white text-gray-900 placeholder-gray-400'}`;
-
   return (
-    <div className={`min-h-screen transition-colors ${darkMode ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'}`}>
-      <Navbar onCartOpen={() => setCartOpen(true)} searchQuery={search} onSearchChange={setSearch} />
+    <div className={`min-h-screen transition-colors ${darkMode ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
+      <Navbar onCartOpen={() => setCartOpen(true)} searchQuery="" onSearchChange={() => {}} />
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        <Link href="/" className={`inline-flex items-center gap-2 text-sm mb-6 hover:text-orange-500 transition ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-          <ArrowLeft className="w-4 h-4" />
-          {t(language, 'continueShopping')}
-        </Link>
+      <main className="max-w-5xl mx-auto px-4 py-8 md:py-12">
+        <header className="mb-10">
+          <Link href="/" className={`inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] mb-4 hover:text-orange-500 transition ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+            <ArrowLeft className="w-3 h-3" />
+            {T('continueShopping')}
+          </Link>
+          <h1 className="text-4xl font-black tracking-tighter">{T('secureCheckout')}</h1>
+        </header>
 
-        {/* Steps */}
-        <div className="flex items-center gap-2 mb-8">
-          {['details', 'payment'].map((s, i) => (
-            <div key={s} className="flex items-center gap-2">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
-                step === s || (step === 'payment' && s === 'details')
-                  ? 'bg-orange-500 text-white'
-                  : darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-200 text-gray-500'
-              }`}>
-                {i + 1}
-              </div>
-              <span className={`text-sm font-medium capitalize ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{s}</span>
-              {i < 1 && <div className={`flex-1 h-0.5 w-8 ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`} />}
-            </div>
-          ))}
-        </div>
+        <div className="grid lg:grid-cols-12 gap-8 items-start">
 
-        <div className="grid md:grid-cols-5 gap-6">
-          {/* Form */}
-          <div className="md:col-span-3 space-y-4">
-            {step === 'details' && (
-              <div className={`p-6 rounded-3xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm`}>
-                <h2 className={`text-lg font-bold mb-5 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Delivery Details
-                </h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className={`text-xs font-semibold mb-1.5 block ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {t(language, 'name')}
-                    </label>
-                    <input
-                      className={inputClass('name')}
-                      placeholder={t(language, 'enterName')}
-                      value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    />
-                    {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
-                  </div>
-                  <div>
-                    <label className={`text-xs font-semibold mb-1.5 block ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {t(language, 'address')}
-                    </label>
-                    <input
-                      className={inputClass('address')}
-                      placeholder={t(language, 'enterAddress')}
-                      value={form.address}
-                      onChange={(e) => setForm({ ...form, address: e.target.value })}
-                    />
-                    {errors.address && <p className="text-red-400 text-xs mt-1">{errors.address}</p>}
-                  </div>
-                  <div>
-                    <label className={`text-xs font-semibold mb-1.5 block ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {t(language, 'phone')}
-                    </label>
-                    <input
-                      className={inputClass('phone')}
-                      placeholder={t(language, 'enterPhoneNum')}
-                      value={form.phone}
-                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    />
-                    {errors.phone && <p className="text-red-400 text-xs mt-1">{errors.phone}</p>}
-                  </div>
+          {/* Main Flow */}
+          <div className="lg:col-span-8 space-y-6">
+
+            {/* Step 1: Branch Selection */}
+            <div className={`p-8 rounded-[2.5rem] border shadow-sm ${
+              step === 'branch'
+                ? darkMode ? 'bg-slate-900 border-orange-500/30' : 'bg-white border-orange-200'
+                : darkMode ? 'bg-slate-900/50 border-slate-800 opacity-60' : 'bg-slate-100 border-slate-200 opacity-60'
+            }`}>
+              <div className="flex items-center gap-4 mb-8">
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black ${
+                  step === 'branch' ? 'bg-orange-500 text-white' : 'bg-slate-200 text-slate-500'
+                }`}>1</div>
+                <div>
+                  <h2 className="text-xl font-black tracking-tight">{T('pickupBranchTime')}</h2>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{T('selectWhenWhere')}</p>
                 </div>
-
-                {/* Payment method selection */}
-                <h2 className={`text-lg font-bold mt-6 mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  {t(language, 'paymentMethod')}
-                </h2>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setPaymentMethod('momo')}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition ${
-                      paymentMethod === 'momo'
-                        ? 'border-orange-500 bg-orange-50 dark:bg-orange-500/10'
-                        : darkMode ? 'border-gray-700 hover:border-gray-600' : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <Smartphone className={`w-6 h-6 ${paymentMethod === 'momo' ? 'text-orange-500' : darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                    <span className={`text-sm font-semibold ${paymentMethod === 'momo' ? 'text-orange-500' : darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      {t(language, 'mobileMoney')}
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => setPaymentMethod('cod')}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition ${
-                      paymentMethod === 'cod'
-                        ? 'border-orange-500 bg-orange-50 dark:bg-orange-500/10'
-                        : darkMode ? 'border-gray-700 hover:border-gray-600' : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <Banknote className={`w-6 h-6 ${paymentMethod === 'cod' ? 'text-orange-500' : darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                    <span className={`text-sm font-semibold ${paymentMethod === 'cod' ? 'text-orange-500' : darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      {t(language, 'cashOnDelivery')}
-                    </span>
-                  </button>
-                </div>
-
-                {paymentMethod === 'momo' && (
-                  <div className="mt-4">
-                    <label className={`text-xs font-semibold mb-1.5 block ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {t(language, 'phoneNumber')} (MTN / Airtel)
-                    </label>
-                    <input
-                      className={inputClass('momoPhone')}
-                      placeholder={t(language, 'enterPhone')}
-                      value={form.momoPhone}
-                      onChange={(e) => setForm({ ...form, momoPhone: e.target.value })}
-                    />
-                    {errors.momoPhone && <p className="text-red-400 text-xs mt-1">{errors.momoPhone}</p>}
-                    <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                      {t(language, 'momoInstruction')}
-                    </p>
-                  </div>
-                )}
-
-                <button
-                  onClick={handleProceed}
-                  className="w-full mt-6 bg-orange-500 hover:bg-orange-600 text-white py-3.5 rounded-2xl font-bold transition-all hover:shadow-lg hover:shadow-orange-500/30"
-                >
-                  {t(language, 'checkout')} →
-                </button>
               </div>
-            )}
 
-            {step === 'payment' && (
-              <div className={`p-6 rounded-3xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm`}>
-                <h2 className={`text-lg font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  {t(language, 'orderSummary')}
-                </h2>
-                <div className={`p-4 rounded-2xl mb-6 space-y-1.5 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                  <div className="flex justify-between text-sm">
-                    <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>{t(language, 'name')}</span>
-                    <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{form.name}</span>
+              {step === 'branch' && (
+                <div className="space-y-8">
+                  {/* Branch Selector */}
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {loadingBranches ? (
+                      Array(6).fill(0).map((_, i) => (
+                        <div key={i} className={`h-24 rounded-2xl animate-pulse ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
+                      ))
+                    ) : (
+                      branches.map((b) => (
+                        <button
+                          key={b.id}
+                          onClick={() => setSelectedBranch(b.id)}
+                          className={`flex flex-col p-5 rounded-3xl border-2 text-left transition-all ${
+                            selectedBranch === b.id
+                              ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-500/5'
+                              : darkMode ? 'border-slate-800 hover:border-slate-700 bg-slate-800/50' : 'border-slate-100 hover:border-slate-200 bg-white'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <MapPin className={`w-4 h-4 ${selectedBranch === b.id ? 'text-orange-500' : 'text-slate-400'}`} />
+                            {selectedBranch === b.id && <CheckCircle className="w-4 h-4 text-orange-500" />}
+                          </div>
+                          <span className={`text-sm font-black tracking-tight ${selectedBranch === b.id ? 'text-orange-600' : ''}`}>{b.name}</span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{b.location}</span>
+                        </button>
+                      ))
+                    )}
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>{t(language, 'address')}</span>
-                    <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{form.address}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>{t(language, 'paymentMethod')}</span>
-                    <span className={`font-medium text-orange-500`}>
-                      {paymentMethod === 'momo' ? t(language, 'mobileMoney') : t(language, 'cashOnDelivery')}
-                    </span>
-                  </div>
-                  {paymentMethod === 'momo' && (
-                    <div className="flex justify-between text-sm">
-                      <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>MoMo #</span>
-                      <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{form.momoPhone}</span>
+                  {errors.branch && <p className="text-red-500 text-xs font-bold">{errors.branch}</p>}
+
+                  {/* Time Selector */}
+                  <div className="space-y-4">
+                    <label className="text-xs font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                      <Clock className="w-3 h-3" />
+                      {T('selectPickupTime')}
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {['09:00', '11:00', '13:00', '15:00', '17:00', '19:00'].map((time) => (
+                        <button
+                          key={time}
+                          onClick={() => setPickupTime(time)}
+                          className={`px-6 py-3 rounded-2xl border-2 font-bold text-sm transition-all ${
+                            pickupTime === time
+                              ? 'border-orange-500 bg-orange-500 text-white'
+                              : darkMode ? 'border-slate-800 hover:border-slate-700 bg-slate-800/50' : 'border-slate-100 hover:border-slate-200 bg-white'
+                          }`}
+                        >
+                          {time}
+                        </button>
+                      ))}
                     </div>
-                  )}
+                    {errors.time && <p className="text-red-500 text-xs font-bold">{errors.time}</p>}
+                  </div>
+
+                  <button
+                    onClick={handleProceedToDeposit}
+                    className="w-full bg-slate-900 dark:bg-orange-600 text-white py-5 rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs transition-all hover:shadow-2xl hover:scale-[1.02]"
+                  >
+                    {T('confirmSelection')} →
+                  </button>
                 </div>
-                <button
-                  onClick={handlePlaceOrder}
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-2xl font-bold text-base transition-all hover:shadow-lg hover:shadow-orange-500/30"
-                >
-                  {paymentMethod === 'momo' ? t(language, 'payWithMomo') : t(language, 'placeOrder')} — {formatted(total)} RWF
-                </button>
-                <button
-                  onClick={() => setStep('details')}
-                  className={`w-full mt-3 py-3 rounded-2xl font-medium text-sm transition ${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
-                >
-                  ← Edit details
-                </button>
+              )}
+            </div>
+
+            {/* Step 2: MoMo Deposit */}
+            <div className={`p-8 rounded-[2.5rem] border shadow-sm ${
+              step === 'deposit'
+                ? darkMode ? 'bg-slate-900 border-orange-500/30' : 'bg-white border-orange-200'
+                : darkMode ? 'bg-slate-900/50 border-slate-800 opacity-60' : 'bg-slate-100 border-slate-200 opacity-60'
+            }`}>
+              <div className="flex items-center gap-4 mb-8">
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black ${
+                  step === 'deposit' ? 'bg-orange-500 text-white' : 'bg-slate-200 text-slate-500'
+                }`}>2</div>
+                <div>
+                  <h2 className="text-xl font-black tracking-tight">{T('momoDeposit')}</h2>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{T('requiredToConfirm')}</p>
+                </div>
               </div>
-            )}
+
+              {step === 'deposit' && (
+                <div className="space-y-6">
+                  <div className={`p-6 rounded-3xl border-2 border-dashed ${darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-orange-50/50 border-orange-100'}`}>
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-orange-500/20">
+                        <Info className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="font-bold text-sm">{T('whyDeposit')}</p>
+                        <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                          {T('depositExplain').replace('{amount}', String(DEPOSIT_AMOUNT))}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase tracking-widest text-slate-500">{T('momoPhoneLabel')}</label>
+                    <div className="relative">
+                      <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                      <input
+                        type="tel"
+                        placeholder={T('momoPhonePlaceholder')}
+                        className={`w-full pl-12 pr-4 py-4 rounded-2xl border-2 outline-none transition-all ${
+                          darkMode ? 'bg-slate-800 border-slate-700 focus:border-orange-500' : 'bg-white border-slate-100 focus:border-orange-500'
+                        }`}
+                        value={momoPhone}
+                        onChange={(e) => setMomoPhone(e.target.value)}
+                      />
+                    </div>
+                    {errors.momoPhone && <p className="text-red-500 text-xs font-bold">{errors.momoPhone}</p>}
+                    {errors.general && <p className="text-red-500 text-xs font-bold">{errors.general}</p>}
+                  </div>
+
+                  <button
+                    onClick={handlePlaceOrder}
+                    className="w-full bg-orange-500 hover:bg-orange-600 text-white py-5 rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs transition-all hover:shadow-2xl shadow-lg shadow-orange-500/20"
+                  >
+                    {T('payAndOrder').replace('{amount}', String(DEPOSIT_AMOUNT))}
+                  </button>
+
+                  <button
+                    onClick={() => setStep('branch')}
+                    className={`w-full py-3 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition ${darkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    {T('changeBranchTime')}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Order summary sidebar */}
-          <div className="md:col-span-2">
-            <div className={`p-5 rounded-3xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm sticky top-24`}>
-              <h3 className={`font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                {t(language, 'orderSummary')} ({cart.reduce((s, i) => s + i.quantity, 0)} items)
+          {/* Sidebar: Summary */}
+          <aside className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
+            <div className={`p-8 rounded-[2.5rem] border shadow-2xl ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+              <h3 className="text-xl font-black tracking-tight mb-6 flex items-center justify-between">
+                {T('summary')}
+                <span className="text-xs font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full uppercase tracking-widest">
+                  {cart.reduce((s, i) => s + i.quantity, 0)} {T('itemsLabel')}
+                </span>
               </h3>
-              <div className="space-y-3 max-h-64 overflow-y-auto scrollbar-hide mb-4">
+
+              <div className="space-y-4 max-h-72 overflow-y-auto pr-2 scrollbar-hide mb-8">
                 {cart.map((item) => (
-                  <div key={item.product.id} className="flex gap-3 items-center">
-                    <div className={`relative w-12 h-12 rounded-xl overflow-hidden ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} shrink-0`}>
-                      <Image src={item.product.image} alt={item.product.name} fill className="object-contain p-1 rounded-xl" unoptimized />
+                  <div key={item.product.id} className="flex gap-4 items-center">
+                    <div className={`relative w-14 h-14 rounded-2xl overflow-hidden ${darkMode ? 'bg-slate-800' : 'bg-slate-50'} shrink-0 border border-slate-100 dark:border-slate-800`}>
+                      <Image src={item.product.image} alt={item.product.name} fill className="object-contain p-2" unoptimized />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-medium line-clamp-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      <p className={`text-xs font-black tracking-tight line-clamp-1 uppercase ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>
                         {item.product.name}
                       </p>
-                      <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>x{item.quantity}</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{T('quantity')}: {item.quantity}</p>
                     </div>
-                    <p className="text-sm font-bold text-orange-500 shrink-0">
+                    <p className="text-sm font-black text-orange-600 shrink-0">
                       {formatted(item.product.price * item.quantity)}
                     </p>
                   </div>
                 ))}
               </div>
-              <div className={`border-t pt-4 space-y-2 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                <div className="flex justify-between text-sm">
-                  <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>{t(language, 'subtotal')}</span>
-                  <span className={darkMode ? 'text-white' : 'text-gray-900'}>{formatted(total)} RWF</span>
+
+              <div className={`space-y-3 pt-6 border-t ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+                <div className="flex justify-between text-xs font-bold uppercase tracking-widest">
+                  <span className="text-slate-400">{T('subtotal')}</span>
+                  <span className={darkMode ? 'text-white' : 'text-slate-900'}>{formatted(total)} RWF</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>{t(language, 'delivery')}</span>
-                  <span className="text-orange-500 font-medium">{t(language, 'free')}</span>
+                {step === 'deposit' && (
+                  <div className="flex justify-between text-xs font-bold uppercase tracking-widest">
+                    <span className="text-slate-400">{T('momoDeposit')}</span>
+                    <span className="text-orange-500">+{formatted(DEPOSIT_AMOUNT)} RWF</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-xs font-bold uppercase tracking-widest">
+                  <span className="text-slate-400">{T('pickupBranch')}</span>
+                  <span className="text-green-500">{T('pickupFree')}</span>
                 </div>
-                <div className={`flex justify-between font-bold text-base pt-2 border-t ${darkMode ? 'border-gray-700 text-white' : 'border-gray-200 text-gray-900'}`}>
-                  <span>{t(language, 'cartTotal')}</span>
-                  <span>{formatted(total)} RWF</span>
+                <div className={`flex justify-between font-black text-lg pt-4 border-t ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+                  <span className="tracking-tighter">{T('totalDue')}</span>
+                  <span className="text-orange-600 tracking-tighter">
+                    {formatted(total + (step === 'deposit' ? DEPOSIT_AMOUNT : 0))} RWF
+                  </span>
                 </div>
               </div>
             </div>
-          </div>
+
+            {/* Selected Info Preview */}
+            {selectedBranch && (
+              <div className={`p-6 rounded-[2rem] border ${darkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-100'}`}>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <MapPin className="w-4 h-4 text-orange-500" />
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{T('branch')}</p>
+                      <p className="text-xs font-bold">{branches.find(b => b.id === selectedBranch)?.name}</p>
+                    </div>
+                  </div>
+                  {pickupTime && (
+                    <div className="flex items-center gap-3">
+                      <Clock className="w-4 h-4 text-orange-500" />
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{T('pickupTime')}</p>
+                        <p className="text-xs font-bold">{T('today')}, {pickupTime}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </aside>
         </div>
       </main>
     </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useStore } from '@/lib/store';
-import { t } from '@/lib/translations';
+import { t, tCat } from '@/lib/translations';
 import { motion } from 'framer-motion';
 
 interface CategoryFilterProps {
@@ -48,7 +48,7 @@ export default function CategoryFilter({ categories, selected, onSelect }: Categ
                 : 'bg-white text-slate-500 border-slate-100 hover:border-slate-200 shadow-sm'
             }`}
           >
-            <span className="relative z-10">{cat}</span>
+            <span className="relative z-10">{tCat(language, cat)}</span>
             {isSelected && (
               <motion.div 
                 layoutId="catUnderline"

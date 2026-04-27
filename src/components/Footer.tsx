@@ -1,7 +1,8 @@
 'use client';
 
 import { useStore } from '@/lib/store';
-import { 
+import { t } from '@/lib/translations';
+import {
   Send,
   ExternalLink,
   ShieldCheck,
@@ -15,34 +16,35 @@ import {
 import Link from 'next/link';
 
 export default function Footer() {
-  const { darkMode } = useStore();
+  const { darkMode, language } = useStore();
+  const T = (key: string) => t(language, key);
 
   const sections = [
     {
-      title: 'Shop',
+      titleKey: 'shop',
       links: [
-        { label: 'All Products', href: '/' },
-        { label: 'Featured', href: '/' },
-        { label: 'New Arrivals', href: '/' },
-        { label: 'Offers', href: '/' },
+        { labelKey: 'allProducts', href: '/' },
+        { labelKey: 'featured', href: '/' },
+        { labelKey: 'newArrivals', href: '/' },
+        { labelKey: 'offers', href: '/' },
       ]
     },
     {
-      title: 'Support',
+      titleKey: 'support',
       links: [
-        { label: 'Help Center', href: '/' },
-        { label: 'Track Order', href: '/' },
-        { label: 'Returns', href: '/' },
-        { label: 'Shipping Info', href: '/' },
+        { labelKey: 'helpCenter', href: '/' },
+        { labelKey: 'trackOrder', href: '/' },
+        { labelKey: 'returns', href: '/' },
+        { labelKey: 'shippingInfo', href: '/' },
       ]
     },
     {
-      title: 'Company',
+      titleKey: 'company',
       links: [
-        { label: 'About Us', href: '/' },
-        { label: 'Careers', href: '/' },
-        { label: 'Store Locations', href: '/' },
-        { label: 'Contact Us', href: '/' },
+        { labelKey: 'aboutUs', href: '/' },
+        { labelKey: 'careers', href: '/' },
+        { labelKey: 'storeLocations', href: '/' },
+        { labelKey: 'contactUs', href: '/' },
       ]
     }
   ];
@@ -58,8 +60,8 @@ export default function Footer() {
                 <Truck className="w-6 h-6" />
               </div>
               <div>
-                <h4 className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>Free Delivery</h4>
-                <p className="text-xs text-gray-500">On all orders in Kigali</p>
+                <h4 className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{T('freeDelivery')}</h4>
+                <p className="text-xs text-gray-500">{T('freeDeliveryDesc')}</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -67,8 +69,8 @@ export default function Footer() {
                 <ShieldCheck className="w-6 h-6" />
               </div>
               <div>
-                <h4 className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>Secure Payment</h4>
-                <p className="text-xs text-gray-500">100% secure checkout</p>
+                <h4 className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{T('securePayment')}</h4>
+                <p className="text-xs text-gray-500">{T('securePaymentDesc')}</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -76,8 +78,8 @@ export default function Footer() {
                 <RotateCcw className="w-6 h-6" />
               </div>
               <div>
-                <h4 className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>Easy Returns</h4>
-                <p className="text-xs text-gray-500">7-day return policy</p>
+                <h4 className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{T('easyReturns')}</h4>
+                <p className="text-xs text-gray-500">{T('easyReturnsDesc')}</p>
               </div>
             </div>
           </div>
@@ -98,12 +100,12 @@ export default function Footer() {
               </div>
             </div>
             <p className={`text-sm leading-relaxed ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              Rwanda&apos;s leading online supermarket. We bring quality, freshness, and convenience to your doorstep in Kigali.
+              {T('footerTagline')}
             </p>
             <div className="flex items-center gap-3">
               {[Globe, Mail, MessageSquare, Info].map((Icon, i) => (
-                <button 
-                  key={i} 
+                <button
+                  key={i}
                   className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
                     darkMode ? 'bg-gray-800 text-gray-400 hover:bg-orange-500 hover:text-white' : 'bg-gray-50 text-gray-500 hover:bg-orange-500 hover:text-white'
                   }`}
@@ -116,18 +118,18 @@ export default function Footer() {
 
           {/* Links */}
           {sections.map((section) => (
-            <div key={section.title}>
-              <h4 className={`font-bold text-base mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{section.title}</h4>
+            <div key={section.titleKey}>
+              <h4 className={`font-bold text-base mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{T(section.titleKey)}</h4>
               <ul className="space-y-4">
                 {section.links.map((link) => (
-                  <li key={link.label}>
-                    <Link 
-                      href={link.href} 
+                  <li key={link.labelKey}>
+                    <Link
+                      href={link.href}
                       className={`text-sm transition-colors flex items-center group gap-1 ${
                         darkMode ? 'text-gray-400 hover:text-orange-500' : 'text-gray-500 hover:text-orange-500'
                       }`}
                     >
-                      {link.label}
+                      {T(link.labelKey)}
                       <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </Link>
                   </li>
@@ -138,14 +140,14 @@ export default function Footer() {
 
           {/* Newsletter */}
           <div className="space-y-6">
-            <h4 className={`font-bold text-base ${darkMode ? 'text-white' : 'text-gray-900'}`}>Stay Updated</h4>
+            <h4 className={`font-bold text-base ${darkMode ? 'text-white' : 'text-gray-900'}`}>{T('stayUpdated')}</h4>
             <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              Subscribe to our newsletter for exclusive deals and updates.
+              {T('subscribeNewsletter')}
             </p>
             <div className="relative">
-              <input 
-                type="email" 
-                placeholder="Your email address"
+              <input
+                type="email"
+                placeholder={T('footerEmailPlaceholder')}
                 className={`w-full pl-4 pr-12 py-3 rounded-2xl border outline-none transition-all ${
                   darkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-orange-500' : 'bg-gray-50 border-gray-200 text-gray-900 focus:border-orange-500'
                 }`}
@@ -160,21 +162,21 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className={`pt-8 border-t flex flex-col md:flex-row items-center justify-between gap-6 ${darkMode ? 'border-gray-800' : 'border-gray-100'}`}>
           <div className="flex flex-wrap justify-center gap-6">
-            {['Privacy Policy', 'Terms of Service', 'Cookie Policy'].map((item) => (
-              <Link key={item} href="/" className={`text-xs hover:text-orange-500 transition-colors ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                {item}
+            {(['privacyPolicy', 'termsOfService', 'cookiePolicy'] as const).map((key) => (
+              <Link key={key} href="/" className={`text-xs hover:text-orange-500 transition-colors ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                {T(key)}
               </Link>
             ))}
           </div>
-          
+
           <div className="flex flex-col items-center md:items-end gap-2">
             <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-              © 2026 Simba Supermarket. All rights reserved.
+              © 2026 Simba Supermarket. {T('allRightsReserved')}
             </p>
             <div className="flex items-center gap-3 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
-               <div className="h-6 w-10 bg-gray-400/20 rounded-md"></div>
-               <div className="h-6 w-10 bg-gray-400/20 rounded-md"></div>
-               <div className="h-6 w-10 bg-gray-400/20 rounded-md"></div>
+              <div className="h-6 w-10 bg-gray-400/20 rounded-md"></div>
+              <div className="h-6 w-10 bg-gray-400/20 rounded-md"></div>
+              <div className="h-6 w-10 bg-gray-400/20 rounded-md"></div>
             </div>
           </div>
         </div>

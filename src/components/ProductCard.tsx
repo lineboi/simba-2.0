@@ -15,6 +15,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { addToCart, darkMode, language } = useStore();
+  const T = (key: string) => t(language, key);
   const [added, setAdded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -24,9 +25,12 @@ export default function ProductCard({ product }: ProductCardProps) {
     return (hash % 2) + 4; // 4 or 5 stars
   }, [product.name]);
 
+  // Simplified stock check for demo (assume in stock if not defined)
+  const isInStock = product.stock === undefined || product.stock > 0;
+
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (!product.inStock) return;
+    if (!isInStock) return;
     addToCart(product);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
@@ -52,18 +56,18 @@ export default function ProductCard({ product }: ProductCardProps) {
         }`}>
           {/* Top Badges */}
           <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-            {!product.inStock && (
+            {!isInStock && (
               <span className="bg-red-500 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full shadow-lg">
-                Sold Out
+                {T('soldOut')}
               </span>
             )}
-            {product.inStock && isHovered && (
-              <motion.span 
+            {isInStock && isHovered && (
+              <motion.span
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 className="bg-green-500 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full shadow-lg"
               >
-                In Stock
+                {T('inStock')}
               </motion.span>
             )}
           </div>
@@ -93,7 +97,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             
             {/* Quick Add Overlay (Desktop) */}
             <AnimatePresence>
-              {isHovered && product.inStock && (
+              {isHovered && isInStock && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -106,7 +110,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                     className="bg-white text-orange-600 font-bold px-6 py-2.5 rounded-full shadow-xl flex items-center gap-2 hover:bg-orange-600 hover:text-white transition-colors"
                   >
                     <ShoppingCart className="w-4 h-4" />
-                    Add to Cart
+                    {T('addToCart')}
                   </motion.button>
                 </motion.div>
               )}
@@ -143,17 +147,17 @@ export default function ProductCard({ product }: ProductCardProps) {
                   </span>
                   <span className="text-[10px] font-bold text-slate-400 uppercase">RWF</span>
                 </div>
-                <span className="text-[9px] font-medium text-slate-400 italic">Per {product.unit}</span>
+                <span className="text-[9px] font-medium text-slate-400 italic">{T('perUnit')} {product.unit}</span>
               </div>
 
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={handleAdd}
-                disabled={!product.inStock}
+                disabled={!isInStock}
                 className={`relative overflow-hidden w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition-all ${
                   added
                     ? 'bg-green-500 text-white'
-                    : product.inStock
+                    : isInStock
                     ? 'bg-orange-600 text-white shadow-[0_10px_20px_rgba(234,88,12,0.3)] hover:shadow-none'
                     : 'bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-slate-800'
                 }`}

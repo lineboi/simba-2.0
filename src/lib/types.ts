@@ -1,7 +1,20 @@
+export type UserRole = 'CUSTOMER' | 'BRANCH_MANAGER' | 'BRANCH_STAFF' | 'ADMIN';
+
 export interface User {
+  id: string;
   name: string;
   email: string;
-  isAdmin?: boolean;
+  role: UserRole;
+  branchId?: string;
+  noShowFlags?: number;
+}
+
+export interface Branch {
+  id: string;
+  name: string;
+  location: string;
+  rating: number;
+  reviewCount: number;
 }
 
 export interface Product {
@@ -10,9 +23,9 @@ export interface Product {
   price: number;
   category: string;
   subcategoryId: number;
-  inStock: boolean;
   image: string;
   unit: string;
+  stock?: number; // Stock at selected branch
 }
 
 export interface Store {
@@ -42,6 +55,29 @@ export interface Review {
   location: string;
   verified: boolean;
   date: string;
+  branchId?: string;
 }
 
 export type Language = 'en' | 'fr' | 'rw';
+
+export interface Order {
+  id: string;
+  userId?: string;
+  branchId: string;
+  total: number;
+  status: 'pending' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+  pickupTime?: string;
+  depositPaid: boolean;
+  depositAmount: number;
+  assignedStaffId?: string;
+  items: OrderItem[];
+  createdAt: string;
+}
+
+export interface OrderItem {
+  id: string;
+  productId: number;
+  product: Product;
+  quantity: number;
+  price: number;
+}

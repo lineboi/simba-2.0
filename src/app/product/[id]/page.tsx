@@ -7,7 +7,7 @@ import { t } from '@/lib/translations';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import ProductCard from '@/components/ProductCard';
-import { ArrowLeft, ShoppingCart, Check, Package, Tag, Hash, ShieldCheck, Truck, Sparkles } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Check, Package, Tag, ShieldCheck, Truck, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -39,7 +39,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   }, [id, router]);
 
   const handleAdd = () => {
-    if (!product || !product.inStock) return;
+    if (!product) return;
     addToCart(product);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
@@ -88,13 +88,6 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                   unoptimized
                 />
               </motion.div>
-              {!product.inStock && (
-                <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center">
-                  <span className="bg-red-500 text-white font-black uppercase tracking-widest px-8 py-3 rounded-full text-xs shadow-2xl">
-                    {t(language, 'outOfStock')}
-                  </span>
-                </div>
-              )}
             </div>
 
             {/* Details */}
@@ -133,13 +126,10 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               <div className="hidden lg:flex gap-4">
                 <button
                   onClick={handleAdd}
-                  disabled={!product.inStock}
                   className={`flex-1 flex items-center justify-center gap-3 py-5 rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 shadow-2xl active:scale-95 ${
                     added
                       ? 'bg-green-500 text-white'
-                      : product.inStock
-                      ? 'bg-slate-950 dark:bg-orange-600 text-white hover:shadow-orange-500/30'
-                      : 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-800'
+                      : 'bg-slate-950 dark:bg-orange-600 text-white hover:shadow-orange-500/30'
                   }`}
                 >
                   {added ? <Check className="w-5 h-5" /> : <ShoppingCart className="w-5 h-5" />}
@@ -153,13 +143,13 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                   <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-500/10 flex items-center justify-center">
                     <ShieldCheck className="w-5 h-5 text-orange-600" />
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Quality Assured</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t(language, 'qualityAssured')}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-500/10 flex items-center justify-center">
                     <Truck className="w-5 h-5 text-green-600" />
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Next Day Delivery</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t(language, 'nextDayDelivery')}</span>
                 </div>
               </div>
             </div>
@@ -209,17 +199,14 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               
               <button
                 onClick={handleAdd}
-                disabled={!product.inStock}
                 className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all duration-500 shadow-xl active:scale-95 ${
                   added
                     ? 'bg-green-500 text-white'
-                    : product.inStock
-                    ? 'bg-slate-950 dark:bg-orange-600 text-white'
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-800'
+                    : 'bg-slate-950 dark:bg-orange-600 text-white'
                 }`}
               >
                 {added ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
-                {added ? 'Added' : t(language, 'addToCart')}
+                {added ? t(language, 'added') : t(language, 'addToCart')}
               </button>
             </div>
           </div>

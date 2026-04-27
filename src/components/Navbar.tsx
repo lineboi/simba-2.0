@@ -4,27 +4,33 @@ import {
   ShoppingCart, 
   Moon, 
   Sun, 
-  Globe, 
-  Search, 
   X, 
   User, 
   LogOut, 
   LayoutGrid,
-  ChevronRight,
   Sparkles,
   ArrowRight,
-  Menu
+  MessageSquare,
+  Zap,
+  Loader2
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { t } from '@/lib/translations';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
+import { Product } from '@/lib/types';
 
 interface NavbarProps {
   onCartOpen: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
+}
+
+interface AiSearchResponse {
+  response: string;
+  products: Product[];
 }
 
 const LANGS = [
@@ -33,18 +39,45 @@ const LANGS = [
   { code: 'rw', label: 'RW' },
 ] as const;
 
-export default function Navbar({ onCartOpen, searchQuery, onSearchChange }: NavbarProps) {
-  const { darkMode, toggleDarkMode, language, setLanguage, user, logout, cartCount } = useStore();
+export default function Navbar({ onCartOpen }: NavbarProps) {
+  const { darkMode, toggleDarkMode, language, setLanguage, user, logout, cartCount, addToCart } = useStore();
+  const T = (key: string) => t(language, key);
   const [scrolled, setScrolled] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [aiSearchOpen, setAiSearchOpen] = useState(false);
+  const [aiQuery, setAiQuery] = useState('');
+  const [aiResponse, setAiResponse] = useState<AiSearchResponse | null>(null);
+  const [loadingAi, setLoadingAi] = useState(false);
   const count = cartCount();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  const handleAiSearch = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!aiQuery.trim()) return;
+
+    setLoadingAi(true);
+    setAiResponse(null);
+
+    try {
+      const res = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: aiQuery }),
+      });
+      const data = await res.json();
+      setAiResponse(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingAi(false);
+    }
+  };
 
   return (
     <>
@@ -67,30 +100,35 @@ export default function Navbar({ onCartOpen, searchQuery, onSearchChange }: Navb
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border-2 border-white dark:border-slate-950" />
             </div>
             <div className="hidden sm:block">
-              <h1 className="text-xl font-black tracking-tighter leading-none dark:text-white">SIMBA</h1>
-              <p className="text-[10px] font-bold text-orange-600 uppercase tracking-[0.2em] mt-0.5">Online</p>
+              <h1 className="text-xl font-black tracking-tighter leading-none dark:text-white uppercase">SIMBA</h1>
+              <p className="text-[10px] font-bold text-orange-600 uppercase tracking-[0.2em] mt-0.5">2.0 Online</p>
             </div>
           </Link>
 
-          {/* SEARCH BAR (CENTER) - DESKTOP */}
+          {/* AI SEARCH BAR (CENTER) - DESKTOP */}
           <div className="flex-1 max-w-2xl relative hidden md:block">
-            <div className="relative group">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-orange-600 transition-colors" />
-              <input
-                type="text"
-                placeholder={t(language, 'search')}
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className={`w-full pl-12 pr-6 py-4 rounded-[2rem] text-sm font-medium outline-none transition-all border ${
-                  darkMode 
-                    ? 'bg-slate-900/50 border-slate-800 focus:bg-slate-900 focus:border-orange-500/50' 
-                    : 'bg-slate-50 border-slate-100 focus:bg-white focus:border-orange-200 shadow-inner'
-                }`}
-              />
-              <kbd className="absolute right-5 top-1/2 -translate-y-1/2 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-[10px] font-black text-slate-400 hidden lg:block">
-                /
+            <button
+              onClick={() => {
+                setAiSearchOpen(true);
+                setTimeout(() => inputRef.current?.focus(), 100);
+              }}
+              className={`w-full group flex items-center gap-4 px-6 py-4 rounded-[2rem] border transition-all text-left ${
+                darkMode 
+                  ? 'bg-slate-900/50 border-slate-800 hover:border-orange-500/50' 
+                  : 'bg-slate-50 border-slate-100 hover:border-orange-200 hover:bg-white hover:shadow-xl'
+              }`}
+            >
+              <div className="w-8 h-8 rounded-xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
+                <Sparkles className="w-4 h-4 text-white fill-current animate-pulse" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-black uppercase tracking-widest text-orange-600">{T('aiAssistant')}</p>
+                <p className="text-[11px] font-bold text-slate-400 group-hover:text-slate-500 transition-colors">&quot;Do you have fresh milk?&quot; or &quot;I need something for breakfast&quot;</p>
+              </div>
+              <kbd className="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-[10px] font-black text-slate-400">
+                {T('aiAsk')}
               </kbd>
-            </div>
+            </button>
           </div>
 
           {/* ACTIONS (RIGHT) */}
@@ -109,7 +147,7 @@ export default function Navbar({ onCartOpen, searchQuery, onSearchChange }: Navb
               {darkMode ? <Sun className="w-5 h-5 fill-current" /> : <Moon className="w-5 h-5" />}
             </motion.button>
 
-            {/* Language (Desktop) */}
+            {/* Language */}
             <div className="hidden lg:flex items-center bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-1">
               {LANGS.map((l) => (
                 <button
@@ -126,7 +164,7 @@ export default function Navbar({ onCartOpen, searchQuery, onSearchChange }: Navb
               ))}
             </div>
 
-            {/* User Account */}
+            {/* User */}
             <div className="relative">
               {user ? (
                 <button
@@ -145,7 +183,7 @@ export default function Navbar({ onCartOpen, searchQuery, onSearchChange }: Navb
               ) : (
                 <Link href="/login" className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-[0.1em] transition-all bg-slate-950 text-white dark:bg-white dark:text-slate-950 hover:scale-105 active:scale-95 shadow-xl`}>
                   <User className="w-4 h-4" />
-                  Sign In
+                  {T('signIn')}
                 </Link>
               )}
 
@@ -170,23 +208,26 @@ export default function Navbar({ onCartOpen, searchQuery, onSearchChange }: Navb
                       <div className="px-4 py-4 mb-2 border-b border-slate-100 dark:border-slate-800">
                         <p className="text-xs font-black uppercase tracking-tight">{user.name}</p>
                         <p className="text-[10px] text-slate-500 font-medium truncate">{user.email}</p>
+                        <div className="mt-1">
+                          <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 uppercase tracking-widest">{user.role}</span>
+                        </div>
                       </div>
                       
                       <div className="space-y-1">
-                        {user.isAdmin && (
+                        {(user.role === 'ADMIN' || user.role === 'BRANCH_MANAGER' || user.role === 'BRANCH_STAFF') && (
                           <Link href="/admin" onClick={() => setUserMenuOpen(false)}>
-                            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-colors uppercase tracking-widest">
+                            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-colors uppercase tracking-widest text-left">
                               <LayoutGrid className="w-4 h-4" />
-                              Admin Panel
+                              {T('managementPanel')}
                             </button>
                           </Link>
                         )}
                         <button
                           onClick={() => { logout(); setUserMenuOpen(false); }}
-                          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors uppercase tracking-widest"
+                          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors uppercase tracking-widest text-left"
                         >
                           <LogOut className="w-4 h-4" />
-                          Sign Out
+                          {T('signOut')}
                         </button>
                       </div>
                     </motion.div>
@@ -195,12 +236,12 @@ export default function Navbar({ onCartOpen, searchQuery, onSearchChange }: Navb
               </AnimatePresence>
             </div>
 
-            {/* Desktop Cart Button */}
+            {/* Cart Button */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onCartOpen}
-              className="relative p-4 rounded-2xl bg-orange-600 text-white shadow-xl shadow-orange-600/20 hidden md:block group overflow-hidden"
+              className="relative p-4 rounded-2xl bg-orange-600 text-white shadow-xl shadow-orange-600/20 group overflow-hidden"
             >
               <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
               <ShoppingCart className="w-5 h-5 relative z-10" />
@@ -214,116 +255,155 @@ export default function Navbar({ onCartOpen, searchQuery, onSearchChange }: Navb
                 </motion.span>
               )}
             </motion.button>
-
-            {/* Mobile Search Toggle */}
-            <button 
-              onClick={() => setMobileSearchOpen(true)}
-              className="p-3 md:hidden rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 transition-colors active:bg-orange-500 active:text-white"
-            >
-               <Search className="w-5 h-5 text-slate-400" />
-            </button>
-
           </div>
         </div>
       </nav>
 
-      {/* Mobile Search Overlay */}
+      {/* AI CONVERSATIONAL SEARCH MODAL */}
       <AnimatePresence>
-        {mobileSearchOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className={`fixed inset-0 z-[110] p-4 flex flex-col md:hidden ${
-              darkMode ? 'bg-slate-950/95' : 'bg-white/95'
-            } backdrop-blur-xl`}
-          >
-            <div className="flex items-center gap-4 mb-8">
-              <div className="flex-1 relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-600" />
-                <input
-                  autoFocus
-                  type="text"
-                  placeholder={t(language, 'search')}
-                  value={searchQuery}
-                  onChange={(e) => onSearchChange(e.target.value)}
-                  className={`w-full pl-11 pr-4 py-4 rounded-2xl text-sm font-bold outline-none border-2 transition-all ${
-                    darkMode 
-                      ? 'bg-slate-900 border-slate-800 focus:border-orange-500' 
-                      : 'bg-slate-50 border-slate-100 focus:border-orange-500 shadow-inner'
-                  }`}
-                />
+        {aiSearchOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setAiSearchOpen(false)}
+              className="absolute inset-0 bg-slate-950/60 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className={`relative w-full max-w-2xl rounded-[3rem] shadow-2xl border flex flex-col overflow-hidden max-h-[80vh] ${
+                darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
+              }`}
+            >
+              {/* Header */}
+              <div className="p-8 pb-4 flex items-center justify-between border-b dark:border-slate-800">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center shadow-xl shadow-orange-500/20">
+                    <Sparkles className="w-6 h-6 text-white fill-current animate-pulse" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black tracking-tighter">{T('aiAssistant')}</h2>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{T('aiSubtitle')}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setAiSearchOpen(false)}
+                  className={`p-3 rounded-2xl ${darkMode ? 'bg-slate-800 hover:bg-slate-700' : 'bg-slate-50 hover:bg-slate-100'}`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <button 
-                onClick={() => {
-                  setMobileSearchOpen(false);
-                  onSearchChange('');
-                }}
-                className={`p-4 rounded-2xl ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <div className="flex-1 overflow-y-auto">
-               <div className="space-y-6">
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Popular Searches</p>
-                    <div className="flex flex-wrap gap-2">
-                      {['Milk', 'Fruits', 'Drinks', 'Soap', 'Diapers'].map(tag => (
-                        <button 
-                          key={tag}
-                          onClick={() => {
-                            onSearchChange(tag);
-                            setMobileSearchOpen(false);
-                          }}
-                          className={`px-4 py-2 rounded-xl text-xs font-bold border ${
-                            darkMode ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-100'
+              {/* Chat Content */}
+              <div className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-hide">
+                {!aiResponse && !loadingAi && (
+                  <div className="py-12 text-center space-y-6">
+                    <div className="w-20 h-20 bg-orange-50 dark:bg-orange-500/5 rounded-[2.5rem] flex items-center justify-center mx-auto">
+                      <MessageSquare className="w-10 h-10 text-orange-200 dark:text-orange-900" />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="font-bold text-lg">{T('aiHelpTitle')}</p>
+                      <p className="text-sm text-slate-500 max-w-xs mx-auto">{T('aiHelpSub')}</p>
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {['Do you have milk?', 'I need breakfast items', 'Organic vegetables', 'Cleaning supplies'].map(suggestion => (
+                        <button
+                          key={suggestion}
+                          onClick={() => { setAiQuery(suggestion); handleAiSearch(); }}
+                          className={`px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${
+                            darkMode ? 'border-slate-800 hover:border-orange-500/50 bg-slate-900' : 'border-slate-100 hover:border-orange-200 bg-white shadow-sm'
                           }`}
                         >
-                          {tag}
+                          {suggestion}
                         </button>
                       ))}
                     </div>
                   </div>
+                )}
 
-                  <div className="space-y-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Quick Links</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button 
-                        onClick={() => {
-                          setMobileSearchOpen(false);
-                          const el = document.getElementById('categories');
-                          el?.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                        className={`flex items-center gap-3 p-4 rounded-2xl border ${
-                          darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
-                        }`}
-                      >
-                        <LayoutGrid className="w-4 h-4 text-orange-600" />
-                        <span className="text-xs font-bold">Categories</span>
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setMobileSearchOpen(false);
-                          onCartOpen();
-                        }}
-                        className={`flex items-center gap-3 p-4 rounded-2xl border ${
-                          darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
-                        }`}
-                      >
-                        <ShoppingCart className="w-4 h-4 text-orange-600" />
-                        <span className="text-xs font-bold">My Cart</span>
-                      </button>
-                    </div>
+                {loadingAi && (
+                  <div className="flex flex-col items-center justify-center py-20 gap-4">
+                    <Loader2 className="w-10 h-10 text-orange-500 animate-spin" />
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 animate-pulse">{T('aiConsulting')}</p>
                   </div>
-               </div>
-            </div>
+                )}
 
-            <div className="py-8 text-center">
-               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Simba Online Experience</p>
-            </div>
-          </motion.div>
+                {aiResponse && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }} 
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-8"
+                  >
+                    {/* AI Message */}
+                    <div className="flex gap-4">
+                      <div className="w-8 h-8 rounded-xl bg-slate-950 flex items-center justify-center shrink-0">
+                        <Zap className="w-4 h-4 text-orange-500 fill-current" />
+                      </div>
+                      <div className={`p-5 rounded-[2rem] rounded-tl-none text-sm font-medium leading-relaxed ${
+                        darkMode ? 'bg-slate-800 text-slate-200' : 'bg-slate-50 text-slate-700'
+                      }`}>
+                        {aiResponse.response}
+                      </div>
+                    </div>
+
+                    {/* Matched Products */}
+                    {aiResponse.products && aiResponse.products.length > 0 && (
+                      <div className="space-y-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-12">{T('aiFoundProducts')}</p>
+                        <div className="grid grid-cols-2 gap-4 pl-12">
+                          {aiResponse.products.map((p: Product) => (
+                            <div key={p.id} className={`group p-4 rounded-3xl border transition-all ${
+                              darkMode ? 'bg-slate-800/50 border-slate-700 hover:border-orange-500/30' : 'bg-white border-slate-100 hover:shadow-xl'
+                            }`}>
+                              <div className="relative aspect-square mb-3 rounded-2xl overflow-hidden bg-white p-2 border border-slate-100 dark:border-transparent">
+                                <Image src={p.image} alt={p.name} fill className="object-contain" unoptimized />
+                              </div>
+                              <p className="text-xs font-black tracking-tight line-clamp-1 mb-1">{p.name}</p>
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs font-black text-orange-600">{p.price.toLocaleString()} RWF</span>
+                                <button 
+                                  onClick={() => addToCart(p)}
+                                  className="w-8 h-8 rounded-full bg-slate-950 dark:bg-orange-600 text-white flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg"
+                                >
+                                  <ShoppingCart className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </div>
+
+              {/* Input Area */}
+              <div className="p-8 border-t dark:border-slate-800">
+                <form onSubmit={handleAiSearch} className="relative">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    placeholder={T('aiPlaceholder')}
+                    value={aiQuery}
+                    onChange={(e) => setAiQuery(e.target.value)}
+                    className={`w-full pl-6 pr-20 py-5 rounded-3xl border-2 outline-none transition-all ${
+                      darkMode ? 'bg-slate-800 border-slate-700 focus:border-orange-500 text-white' : 'bg-slate-50 border-slate-100 focus:border-orange-500 text-slate-900'
+                    }`}
+                  />
+                  <button
+                    disabled={loadingAi || !aiQuery.trim()}
+                    type="submit"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white rounded-2xl shadow-xl shadow-orange-500/20 transition-all active:scale-95"
+                  >
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                </form>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </>

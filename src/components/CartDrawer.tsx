@@ -58,14 +58,14 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
               {t(language, 'cart')}
             </h2>
             <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
-              {cart.length} {cart.length === 1 ? 'Item' : 'Items'}
+              {cart.length} {cart.length === 1 ? t(language, 'item') : t(language, 'itemsLabel')}
             </span>
           </div>
           <div className="flex items-center gap-2">
             {cart.length > 0 && (
-              <button 
+              <button
                 onClick={() => {
-                  if (confirm('Are you sure you want to clear your entire cart?')) {
+                  if (confirm(t(language, 'confirmClearCart'))) {
                     clearCart();
                     onClose();
                     router.push('/');
@@ -76,7 +76,7 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
                 }`}
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                Clear All
+                {t(language, 'clearAll')}
               </button>
             )}
             <button 
@@ -97,9 +97,9 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
               <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${darkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                 <ShoppingBag className={`w-8 h-8 ${darkMode ? 'text-gray-600' : 'text-gray-300'}`} />
               </div>
-              <h3 className={`text-base font-bold mb-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Your cart is empty</h3>
+              <h3 className={`text-base font-bold mb-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{t(language, 'cartEmpty')}</h3>
               <p className={`text-sm mb-6 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                Browse our products to add items here.
+                {t(language, 'browseToAdd')}
               </p>
               <button
                 onClick={onClose}
@@ -176,17 +176,17 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
           <div className={`p-6 border-t ${darkMode ? 'bg-gray-800/30 border-gray-800' : 'bg-gray-50 border-gray-100'}`}>
             <div className="space-y-4">
               <div className="flex justify-between items-center text-sm">
-                <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>Subtotal</span>
+                <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>{t(language, 'subtotal')}</span>
                 <span className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{formatted(total)} RWF</span>
               </div>
               <div className="flex justify-between items-center text-sm pb-4 border-b border-dashed dark:border-gray-700">
-                <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>Delivery</span>
-                <span className="text-green-500 font-bold uppercase text-[10px]">Free</span>
+                <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>{t(language, 'delivery')}</span>
+                <span className="text-green-500 font-bold uppercase text-[10px]">{t(language, 'free')}</span>
               </div>
-              
+
               <div className="flex justify-between items-end pt-2">
                 <div>
-                  <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Total Amount</p>
+                  <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{t(language, 'totalAmount')}</p>
                   <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                     {formatted(total)} <span className="text-sm font-medium text-gray-500 uppercase">RWF</span>
                   </p>
@@ -196,7 +196,7 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
                   onClick={handleCheckout}
                   className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all shadow-lg shadow-orange-500/20 active:scale-95 flex items-center gap-2"
                 >
-                  {user ? 'Checkout' : 'Login to Buy'}
+                  {user ? t(language, 'checkout') : t(language, 'loginToBuy')}
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -204,11 +204,11 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
               <div className="flex items-center justify-center gap-4 pt-2">
                 <div className="flex items-center gap-1.5 opacity-50">
                   <ShieldCheck className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">Secure</span>
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">{t(language, 'secure')}</span>
                 </div>
                 <div className="flex items-center gap-1.5 opacity-50">
                   <Truck className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">Express</span>
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">{t(language, 'express')}</span>
                 </div>
               </div>
             </div>
