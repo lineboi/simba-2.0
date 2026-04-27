@@ -17,6 +17,8 @@ interface AppState {
   cartTotal: () => number;
   login: (user: User) => void;
   logout: () => void;
+  // Validates the JWT cookie and syncs user state on page load
+  hydrateFromSession: () => Promise<void>;
 }
 
 export const useStore = create<AppState>()(
@@ -65,9 +67,41 @@ export const useStore = create<AppState>()(
       cartCount: () => get().cart.reduce((sum, item) => sum + item.quantity, 0),
       cartTotal: () =>
         get().cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
+
       login: (user) => set({ user }),
-      logout: () => set({ user: null }),
+
+      logout: async () => {
+        set({ user: null });
+        try {
+          await fetch('/api/auth/logout', { method: 'POST' });
+        } catch {
+          // ignore network errors on logout
+        }
+      },
+
+      hydrateFromSession: async () => {
+        try {
+          const res = await fetch('/api/auth/me');
+          if (res.ok) {
+            const data = await res.json();
+            if (data.user) set({ user: data.user });
+          } else {
+            // Cookie invalid/expired — clear stale local user
+            set({ user: null });
+          }
+        } catch {
+          // network error, keep existing state
+        }
+      },
     }),
-    { name: 'simba-store' }
+    {
+      name: 'simba-store',
+      // Only persist cart, language, and darkMode — not user (handled by JWT cookie)
+      partialize: (state) => ({
+        cart: state.cart,
+        language: state.language,
+        darkMode: state.darkMode,
+      }),
+    }
   )
 );

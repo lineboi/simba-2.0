@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import bcrypt from 'bcryptjs';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -124,18 +125,19 @@ async function main() {
     }
   }
 
-  // 5. Seed Users
+  // 5. Seed Users (with hashed passwords)
+  const hashedPassword = await bcrypt.hash('password123', 12);
   const users = [
-    { email: 'admin@simba.rw', name: 'Admin User', role: 'ADMIN', password: 'password123' },
-    { email: 'remera@simba.rw', name: 'Remera Manager', role: 'BRANCH_MANAGER', branchId: branchIds[0], password: 'password123' },
-    { email: 'staff@simba.rw', name: 'Remera Staff', role: 'BRANCH_STAFF', branchId: branchIds[0], password: 'password123' },
-    { email: 'test@test.com', name: 'Customer User', role: 'CUSTOMER', password: 'password123' },
+    { email: 'admin@simba.rw', name: 'Admin User', role: 'ADMIN', password: hashedPassword },
+    { email: 'remera@simba.rw', name: 'Remera Manager', role: 'BRANCH_MANAGER', branchId: branchIds[0], password: hashedPassword },
+    { email: 'staff@simba.rw', name: 'Remera Staff', role: 'BRANCH_STAFF', branchId: branchIds[0], password: hashedPassword },
+    { email: 'test@test.com', name: 'Customer User', role: 'CUSTOMER', password: hashedPassword },
   ];
 
   for (const u of users) {
     await prisma.user.upsert({
       where: { email: u.email },
-      update: u,
+      update: { name: u.name, role: u.role, password: u.password },
       create: u,
     });
   }
