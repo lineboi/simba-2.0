@@ -2,7 +2,7 @@
 
 import { useStore } from '@/lib/store';
 import { Review } from '@/lib/types';
-import { Star, Quote, PenLine, X, Check } from 'lucide-react';
+import { Star, Quote, PenLine, X, Check, MessageSquare } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const AVATAR_COLORS = [
@@ -47,7 +47,12 @@ export default function Reviews() {
     fetch('/api/reviews')
       .then(r => r.json())
       .then(data => {
-        setReviews(data);
+        setReviews(Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to fetch reviews:', err);
+        setReviews([]);
         setLoading(false);
       });
   }, []);
@@ -135,7 +140,7 @@ export default function Reviews() {
           <div className="flex-1 space-y-1">
             {[5,4,3,2,1].map((star) => {
               const count = reviews.filter((r) => r.rating === star).length;
-              const pct = Math.round((count / reviews.length) * 100);
+              const pct = reviews.length > 0 ? Math.round((count / reviews.length) * 100) : 0;
               return (
                 <div key={star} className="flex items-center gap-1.5">
                   <span className={`text-xs w-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{star}</span>
@@ -213,68 +218,79 @@ export default function Reviews() {
         </div>
       )}
 
-      {/* Featured review */}
-      <div className={`relative overflow-hidden rounded-2xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100'}`}>
-        <Quote className="absolute top-3 right-3 w-10 h-10 text-orange-200/60" />
-        <div className="flex items-center gap-3 mb-3">
-          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${reviews[active].color} flex items-center justify-center text-white font-bold text-sm shrink-0`}>
-            {reviews[active].avatar}
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <p className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{reviews[active].name}</p>
-              {reviews[active].verified && (
-                <span className="bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-medium">✓ Verified</span>
-              )}
-            </div>
-            <div className="flex items-center gap-1">
-              <Stars rating={reviews[active].rating} />
-              <span className={`text-[10px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>· {reviews[active].date}</span>
-            </div>
-          </div>
-        </div>
-        <p className={`text-xs leading-relaxed italic relative z-10 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-          &ldquo;{reviews[active].text}&rdquo;
-        </p>
-        <div className="flex gap-1.5 mt-3">
-          {reviews.map((_, i) => (
-            <button key={i} onClick={() => setActive(i)}
-              className={`h-1 rounded-full transition-all duration-300 ${i === active ? 'w-5 bg-orange-500' : 'w-1 bg-orange-200'}`}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Review list */}
-      <div className="space-y-2">
-        {reviews.map((review, i) => (
-          <button
-            key={`${review.name}-${i}`}
-            onClick={() => setActive(i)}
-            className={`w-full text-left p-3 rounded-xl border transition-all duration-200 hover:scale-[1.01] ${
-              active === i
-                ? darkMode ? 'border-orange-500 bg-orange-500/10' : 'border-orange-400 bg-orange-50'
-                : darkMode ? 'border-gray-700 bg-gray-800 hover:border-gray-600' : 'border-gray-100 bg-white hover:border-orange-200'
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-1.5">
-              <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${review.color} flex items-center justify-center text-white font-bold text-xs shrink-0`}>
-                {review.avatar}
+      {/* Reviews Display */}
+      {reviews.length > 0 ? (
+        <>
+          {/* Featured review */}
+          <div className={`relative overflow-hidden rounded-2xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100'}`}>
+            <Quote className="absolute top-3 right-3 w-10 h-10 text-orange-200/60" />
+            <div className="flex items-center gap-3 mb-3">
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${reviews[active]?.color || 'from-gray-400 to-gray-500'} flex items-center justify-center text-white font-bold text-sm shrink-0`}>
+                {reviews[active]?.avatar || '?'}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className={`font-semibold text-xs truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>{review.name}</p>
+              <div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <p className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{reviews[active]?.name}</p>
+                  {reviews[active]?.verified && (
+                    <span className="bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-medium">✓ Verified</span>
+                  )}
+                </div>
                 <div className="flex items-center gap-1">
-                  <Stars rating={review.rating} />
-                  <span className={`text-[10px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{review.date}</span>
+                  <Stars rating={reviews[active]?.rating || 0} />
+                  <span className={`text-[10px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>· {reviews[active]?.date}</span>
                 </div>
               </div>
             </div>
-            <p className={`text-xs line-clamp-2 leading-relaxed ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              &ldquo;{review.text}&rdquo;
+            <p className={`text-xs leading-relaxed italic relative z-10 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              &ldquo;{reviews[active]?.text}&rdquo;
             </p>
-          </button>
-        ))}
-      </div>
+            <div className="flex gap-1.5 mt-3">
+              {reviews.map((_, i) => (
+                <button key={i} onClick={() => setActive(i)}
+                  className={`h-1 rounded-full transition-all duration-300 ${i === active ? 'w-5 bg-orange-500' : 'w-1 bg-orange-200'}`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Review list */}
+          <div className="space-y-2">
+            {reviews.map((review, i) => (
+              <button
+                key={`${review.name}-${i}`}
+                onClick={() => setActive(i)}
+                className={`w-full text-left p-3 rounded-xl border transition-all duration-200 hover:scale-[1.01] ${
+                  active === i
+                    ? darkMode ? 'border-orange-500 bg-orange-500/10' : 'border-orange-400 bg-orange-50'
+                    : darkMode ? 'border-gray-700 bg-gray-800 hover:border-gray-600' : 'border-gray-100 bg-white hover:border-orange-200'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${review.color} flex items-center justify-center text-white font-bold text-xs shrink-0`}>
+                    {review.avatar}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-semibold text-xs truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>{review.name}</p>
+                    <div className="flex items-center gap-1">
+                      <Stars rating={review.rating} />
+                      <span className={`text-[10px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{review.date}</span>
+                    </div>
+                  </div>
+                </div>
+                <p className={`text-xs line-clamp-2 leading-relaxed ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  &ldquo;{review.text}&rdquo;
+                </p>
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className={`p-12 text-center rounded-2xl border border-dashed ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+          <MessageSquare className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+          <p className={`text-sm font-bold ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No reviews yet.</p>
+          <p className="text-xs text-gray-400 mt-1">Be the first to share your experience!</p>
+        </div>
+      )}
     </div>
   );
 }

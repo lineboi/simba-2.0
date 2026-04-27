@@ -12,6 +12,7 @@ import CartDrawer from '@/components/CartDrawer';
 import Footer from '@/components/Footer';
 import Ads from '@/components/Ads';
 import Reviews from '@/components/Reviews';
+import AiAssistant from '@/components/AiAssistant';
 import { 
   Search, 
   ArrowUpDown, 
@@ -44,7 +45,7 @@ interface Category {
 }
 
 export default function Home() {
-  const { darkMode, language } = useStore();
+  const { darkMode, language, aiFilteredProductIds, setAiFilteredProductIds } = useStore();
   const [data, setData] = useState<ProductsData | null>(null);
   const [category, setCategory] = useState('');
   const [search, setSearch] = useState('');
@@ -90,20 +91,30 @@ export default function Home() {
   if (prevFilter.category !== category || prevFilter.search !== search || prevFilter.sort !== sort) {
     setPrevFilter({ category, search, sort });
     setVisibleCount(PAGE_SIZE);
+    // Clear AI filter when user manually changes category or search
+    if (aiFilteredProductIds) setAiFilteredProductIds(null);
   }
 
   const filtered = useMemo(() => {
     let products = data?.products ?? [];
+    
+    // 1. Priority: AI Filter
+    if (aiFilteredProductIds && aiFilteredProductIds.length > 0) {
+      products = products.filter(p => aiFilteredProductIds.includes(p.id));
+    }
+
+    // 2. Normal filters
     if (category) products = products.filter((p) => p.category === category);
     if (search) {
       const q = search.toLowerCase();
       products = products.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q));
     }
+    
     if (sort === 'price-asc') products = [...products].sort((a, b) => a.price - b.price);
     if (sort === 'price-desc') products = [...products].sort((a, b) => b.price - a.price);
     if (sort === 'name-az') products = [...products].sort((a, b) => a.name.localeCompare(b.name));
     return products;
-  }, [data, category, search, sort]);
+  }, [data, category, search, sort, aiFilteredProductIds]);
 
   const visible = filtered.slice(0, visibleCount);
 
@@ -347,6 +358,7 @@ export default function Home() {
       </AnimatePresence>
 
       <Footer />
+      <AiAssistant />
 
       {/* FLOATING ACTION BUTTONS */}
       <AnimatePresence>

@@ -7,6 +7,7 @@ interface AppState {
   language: Language;
   darkMode: boolean;
   user: User | null;
+  aiFilteredProductIds: number[] | null;
   addToCart: (product: Product) => void;
   removeFromCart: (productId: number) => void;
   updateQuantity: (productId: number, quantity: number) => void;
@@ -17,6 +18,7 @@ interface AppState {
   cartTotal: () => number;
   login: (user: User) => void;
   logout: () => void;
+  setAiFilteredProductIds: (ids: number[] | null) => void;
   // Validates the JWT cookie and syncs user state on page load
   hydrateFromSession: () => Promise<void>;
 }
@@ -28,6 +30,7 @@ export const useStore = create<AppState>()(
       language: 'en',
       darkMode: false,
       user: null,
+      aiFilteredProductIds: null,
 
       addToCart: (product) => {
         const cart = get().cart;
@@ -78,6 +81,8 @@ export const useStore = create<AppState>()(
           // ignore network errors on logout
         }
       },
+
+      setAiFilteredProductIds: (ids) => set({ aiFilteredProductIds: ids }),
 
       hydrateFromSession: async () => {
         try {

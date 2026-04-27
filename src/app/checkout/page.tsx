@@ -17,16 +17,22 @@ import {
   MapPin,
   ShoppingBag,
   Info,
-  Star
+  Star,
+  AlertCircle
 } from 'lucide-react';
 
 type Step = 'branch' | 'deposit' | 'processing' | 'success';
 
-const DEPOSIT_AMOUNT = 500;
+const BASE_DEPOSIT = 500;
+const NO_SHOW_PENALTY = 1000;
 
 export default function CheckoutPage() {
   const { darkMode, language, cart, cartTotal, clearCart, user } = useStore();
   const T = (key: string) => t(language, key);
+  
+  // Calculate dynamic deposit based on no-show flags
+  const depositAmount = user ? BASE_DEPOSIT + (user.noShowFlags * NO_SHOW_PENALTY) : BASE_DEPOSIT;
+
   const [cartOpen, setCartOpen] = useState(false);
   const [step, setStep] = useState<Step>('branch');
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -88,8 +94,8 @@ export default function CheckoutPage() {
           userId: user.id,
           branchId: selectedBranch,
           items: cart,
-          total: total + DEPOSIT_AMOUNT,
-          depositAmount: DEPOSIT_AMOUNT,
+          total: total + depositAmount,
+          depositAmount: depositAmount,
           pickupTime: new Date(new Date().setHours(parseInt(pickupTime.split(':')[0]), 0, 0, 0)).toISOString(),
         }),
       });
@@ -279,7 +285,11 @@ export default function CheckoutPage() {
                         >
                           <div className="flex items-center justify-between mb-1">
                             <MapPin className={`w-4 h-4 ${selectedBranch === b.id ? 'text-orange-500' : 'text-slate-400'}`} />
-                            {selectedBranch === b.id && <CheckCircle className="w-4 h-4 text-orange-500" />}
+                            <div className="flex items-center gap-1">
+                               <Star className={`w-3 h-3 ${b.rating > 0 ? 'text-amber-400 fill-current' : 'text-slate-300'}`} />
+                               <span className="text-[10px] font-black">{b.rating.toFixed(1)}</span>
+                               <span className="text-[10px] text-slate-400 font-bold">({b.reviewCount})</span>
+                            </div>
                           </div>
                           <span className={`text-sm font-black tracking-tight ${selectedBranch === b.id ? 'text-orange-600' : ''}`}>{b.name}</span>
                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{b.location}</span>
@@ -349,8 +359,18 @@ export default function CheckoutPage() {
                       <div className="space-y-1">
                         <p className="font-bold text-sm">{T('whyDeposit')}</p>
                         <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                          {T('depositExplain').replace('{amount}', String(DEPOSIT_AMOUNT))}
+                          {T('depositExplain').replace('{amount}', String(depositAmount))}
                         </p>
+                        {user.noShowFlags > 0 && (
+                          <div className="mt-3 p-3 bg-red-50 dark:bg-red-500/10 rounded-xl border border-red-100 dark:border-red-500/20">
+                            <p className="text-[10px] font-black text-red-600 uppercase tracking-widest flex items-center gap-2">
+                              <AlertCircle className="w-3 h-3" /> High Risk Account
+                            </p>
+                            <p className="text-[9px] text-red-500 font-bold mt-1">
+                              Due to {user.noShowFlags} previous no-show(s), your required deposit has been increased.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -377,7 +397,7 @@ export default function CheckoutPage() {
                     onClick={handlePlaceOrder}
                     className="w-full bg-orange-500 hover:bg-orange-600 text-white py-5 rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs transition-all hover:shadow-2xl shadow-lg shadow-orange-500/20"
                   >
-                    {T('payAndOrder').replace('{amount}', String(DEPOSIT_AMOUNT))}
+                    {T('payAndOrder').replace('{amount}', String(depositAmount))}
                   </button>
 
                   <button
@@ -428,7 +448,7 @@ export default function CheckoutPage() {
                 {step === 'deposit' && (
                   <div className="flex justify-between text-xs font-bold uppercase tracking-widest">
                     <span className="text-slate-400">{T('momoDeposit')}</span>
-                    <span className="text-orange-500">+{formatted(DEPOSIT_AMOUNT)} RWF</span>
+                    <span className="text-orange-500">+{formatted(depositAmount)} RWF</span>
                   </div>
                 )}
                 <div className="flex justify-between text-xs font-bold uppercase tracking-widest">
@@ -438,7 +458,7 @@ export default function CheckoutPage() {
                 <div className={`flex justify-between font-black text-lg pt-4 border-t ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
                   <span className="tracking-tighter">{T('totalDue')}</span>
                   <span className="text-orange-600 tracking-tighter">
-                    {formatted(total + (step === 'deposit' ? DEPOSIT_AMOUNT : 0))} RWF
+                    {formatted(total + (step === 'deposit' ? depositAmount : 0))} RWF
                   </span>
                 </div>
               </div>
