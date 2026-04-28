@@ -227,6 +227,16 @@ export default function AdminDashboard() {
               Simba {user.branchId ? 'Supermarket' : 'Global Admin'}
             </p>
           </div>
+          <Link href="/">
+            <button className={`flex items-center gap-2 px-5 py-3 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all ${
+              darkMode
+                ? 'bg-slate-900 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800'
+                : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 shadow-sm'
+            }`}>
+              <ShoppingCart className="w-4 h-4" />
+              <span className="hidden sm:inline">Back to Store</span>
+            </button>
+          </Link>
         </header>
 
         <div className="p-8">

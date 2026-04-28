@@ -223,6 +223,24 @@ export default function Navbar({ onCartOpen, searchQuery, onSearchChange }: Navb
             </div>
           </div>
 
+          {/* Admin Shortcut */}
+          {user && (user.role === 'ADMIN' || user.role === 'BRANCH_MANAGER' || user.role === 'BRANCH_STAFF') && (
+            <Link href="/admin">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all ${
+                  darkMode
+                    ? 'bg-slate-900 border-slate-700 text-orange-400 hover:bg-orange-600/10 hover:border-orange-500'
+                    : 'bg-white border-slate-200 text-orange-600 hover:bg-orange-50 hover:border-orange-300 shadow-sm'
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                Admin
+              </motion.div>
+            </Link>
+          )}
+
           {/* Cart Trigger */}
           <motion.button
             whileHover={{ scale: 1.05 }}
